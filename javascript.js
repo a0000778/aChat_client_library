@@ -234,7 +234,7 @@ aChatClient.prototype.connect=function(){
 			case 4103: _.emit('repeatLogin'); break;
 			case 4104: _.emit('serverKick'); break;
 		}
-		_.emit('close',code);
+		_.emit('close',ev.code);
 		
 		if(ev.code===undefined){
 			_.emit('loseConnect');
