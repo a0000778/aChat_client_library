@@ -18,6 +18,19 @@ function aChatClient(config){
 	this.autoReconnect=('autoReconnect' in config)? config.autoReconnect:true;
 	this.channel=null;
 	this.connected=false;
+	/*
+	可簡化為以下幾類：
+	- 錯誤(所有沒有被接取的錯誤的集中地)
+	- 訊息接收(chatNormal,chatPrivate)
+	- 個人資料處理
+	- 連線中斷
+		- 異常斷線(自主重連)
+		- 伺服器關閉、封鎖
+		- 錯誤(所有連線錯誤)
+	- 連線驗證
+		- 驗證結果(成功、失敗、停用、超時)
+		- 拒絕、封鎖(伺服器超載、封鎖來源)
+	*/
 	this.event={
 		'error': [],
 		//驗證結果系列
