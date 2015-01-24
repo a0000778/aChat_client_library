@@ -216,56 +216,54 @@ aChatClient.prototype.chatSend=function(type,toUserId,msg,callback){
 }
 aChatClient.prototype.connect=function(){
 	var _=this;
-	this.link=new WebSocket(this.server,'chatv1');
-	this.link
-		.on('close',function(ev){
-			_.link=null;
-			_.userId=null;
-			switch(ev.code){
-				case 1000: _.emit('logout'); break;
-				case 1001: _.emit('serverClosing'); break;
-				case 1008: _.emit('ipBanned'); break;
-				case 4000: _.emit('serverMaintenance'); break;
-				case 4001: _.emit('serverLocked'); break;
-				case 4002: _.emit('serverOverLoad'); break;
-				case 4003: _.emit('serverError'); break;
-				case 4100: _.emit('authTimeout'); break;
-				case 4101: _.emit('accountDisabled'); break;
-				case 4102: _.emit('authFail'); break;
-				case 4103: _.emit('repeatLogin'); break;
-				case 4104: _.emit('serverKick'); break;
+	var link=this.link=new WebSocket(this.server,'chatv1');
+	link.addEventListener('close',function(ev){
+		_.link=null;
+		_.userId=null;
+		switch(ev.code){
+			case 1000: _.emit('logout'); break;
+			case 1001: _.emit('serverClosing'); break;
+			case 1008: _.emit('ipBanned'); break;
+			case 4000: _.emit('serverMaintenance'); break;
+			case 4001: _.emit('serverLocked'); break;
+			case 4002: _.emit('serverOverLoad'); break;
+			case 4003: _.emit('serverError'); break;
+			case 4100: _.emit('authTimeout'); break;
+			case 4101: _.emit('accountDisabled'); break;
+			case 4102: _.emit('authFail'); break;
+			case 4103: _.emit('repeatLogin'); break;
+			case 4104: _.emit('serverKick'); break;
+		}
+		_.emit('close',code);
+		
+		if(ev.code===undefined){
+			_.emit('loseConnect');
+			if(_.autoReconnect && _.authData){
+				_.connect().auth();
+				_.emit('reconnect');
 			}
-			_.emit('close',code);
-			
-			if(ev.code===undefined){
-				_.emit('loseConnect');
-				if(_.autoReconnect && _.authData){
-					_.connect().auth();
-					_.emit('reconnect');
-				}
-			}else{
-				_.channel=null;
-				_.authData=null;
-			}
-		})
-		.on('error',function(error){
-			_.emit('error',error);
-		})
-		.on('message',function(data){
-			try{
-				data=JSON.parse(data);
-			}catch(e){
-				return;
-			}
-			if(typeof(data.action)==='string' && _.action.has(data.action)){
-				_.action[data.action].call(_,data);
-			}
-		})
-		.on('open',function(){
-			_.connected=true;
-			_.emit('connected');
-		})
-	;
+		}else{
+			_.channel=null;
+			_.authData=null;
+		}
+	});
+	link.addEventListener('error',function(error){
+		_.emit('error',error);
+	});
+	link.addEventListener('message',function(data){
+		try{
+			data=JSON.parse(data);
+		}catch(e){
+			return;
+		}
+		if(typeof(data.action)==='string' && _.action.has(data.action)){
+			_.action[data.action].call(_,data);
+		}
+	});
+	link.addEventListener('open',function(){
+		_.connected=true;
+		_.emit('connected');
+	});
 }
 aChatClient.prototype.emit=function(evName){//evName,arg1,arg2...
 	if(this.event.hasOwnProperty(evName)){
