@@ -149,7 +149,7 @@ aChatClient.prototype.auth=function(username,password){
 		_.emit('error',new Error('缺少驗證資料'));
 		return;
 	}
-	if(this.link) this.connect();
+	if(!this.link) this.connect();
 	if(this.connected){
 		this._send({
 			'action': 'auth',
