@@ -1,5 +1,7 @@
 /*
-aChat Client Library for JavaScript by a0000778
+aChat Client Library
+for JavaScript v1.0.0 by a0000778
+Tested on Chrome 42, FireFox 35, Opera 27 and Safari 8
 */
 
 /*
@@ -18,53 +20,76 @@ function aChatClient(config){
 	this.autoReconnect=('autoReconnect' in config)? config.autoReconnect:true;
 	this.channel=null;
 	this.connected=false;
-	/*
-	可簡化為以下幾類：
-	- 錯誤(所有沒有被接取的錯誤的集中地)
-	- 訊息接收(chatNormal,chatPrivate)
-	- 個人資料處理
-	- 連線中斷
-		- 異常斷線(自主重連)
-		- 伺服器關閉、封鎖
-		- 錯誤(所有連線錯誤)
-	- 連線驗證
-		- 驗證結果(成功、失敗、停用、超時)
-		- 拒絕、封鎖(伺服器超載、封鎖來源)
-	*/
+	this.cacheUser=new Map();
+	this.cacheChannel=new Map();
 	this.event={
 		'error': [],
-		//驗證結果系列
-		'accountDisabled': [],//帳號被停用
-		'authFail': [],//驗證失敗
-		'authSuccess': [],//驗證成功
-		'authTimeout': [],//驗證超時
-		//頻道處理類
-		'channelList': [],//頻道清單
-		'channelSwitch': [],//頻道切換
-		'channelUserList': [],//頻道在線清單
-		//訊息處理類
-		'chatNormal': [],//頻道聊天訊息
-		'chatPrivate': [],//密頻聊天訊息
-		//連線類
+		/*
+		auth args
+		- error
+		- status
+		*/
+		'auth': [],
+		/*
+		channelList args
+		- error
+		- channel list
+		*/
+		'channelList': [],
+		/*
+		channelSwitch args
+		- error
+		- type (normal,force)
+		- channelId
+		*/
+		'channelSwitch': [],
+		/*
+		channelUserList args
+		- error
+		- channelId
+		- userList
+		*/
+		'channelUserList': [],
+		/*
+		close args
+		- code
+		- reason
+		- autoReconnect
+		*/
 		'close': [],
-		'connected': [],
-		'ipBanned': [],
-		'loseConnect': [],
-		'notSupportProtocol': [],
-		'reconnect': [],
-		'repeatLogin': [],
-		//伺服器訊息類
-		'serverAlert': [],
-		'serverClosing': [],
-		'serverError': [],
-		'serverKick': [],
-		'serverLocked': [],
-		'serverMaintenance': [],
-		'serverOffline': [],
-		'serverOverLoad': [],
-		//使用者類
-		'userGetProfile': [],
-		'userEditProfile': []
+		/*
+		connect args
+		- error
+		*/
+		'connect': [],
+		/*
+		chatNormal args
+		- send time
+		- from user id
+		- from username
+		- message
+		*/
+		'chatNormal': [],
+		/*
+		chatPrivate args
+		- send time
+		- from user id
+		- from username
+		- message
+		*/
+		'chatPrivate': [],
+		/*
+		getUserProfile args
+		- error
+		- userId
+		- result (string or object)
+		*/
+		'getUserProfile': [],
+		/*
+		editUserProfile args
+		- status
+		*/
+		'editUserProfile': []
 	}
 	this.link=null;
 	this.passwordHash=config.passwordHash;
@@ -79,49 +104,91 @@ aChatClient.action={
 	'auth': function(data){
 		if(data.status=='success' && /^\d$/.test(data.userId) && data.userId>0){
 			this.userId=parseInt(data.userId,10);
-			this.emit('authSuccess');
-		}else{
-			this.emit('authFail',data.status);
+			this.emit('auth',null,'success');
 		}
 	},
 	'channel_list': function(data){
-		if(Array.isArray(data.list)=='array')
-			this.emit('channelList',data.list);
+		data.list.forEach(function(ch){
+			this.cacheChannel.set(ch.channelId,ch);
+		},this);
+		this.emit('channelList',null,data.list);
 	},
 	'channel_switch': function(data){
-		if(typeof(data.status)=='string' && typeof(data.channelId)=='Number'){
-			if(data.status=='success' || data.status=='force')
-				this.channel=data.channelId;
-			this.emit('channelSwitch',data.status,data.channelId);
+		if(data.status=='success' || data.status=='force'){
+			this.channel=data.channelId;
+			this.emit('channelSwitch',null,data.status=='force'? 'force':'normal',data.channelId);
+		}else{
+			this.emit('channelSwitch',data.status,data.status=='force'? 'force':'normal',data.channelId);
 		}
 	},
 	'channel_userList': function(data){
-		if('status' in data)
-			this.emit('channelUserList',data.status,data.list || []);
+		if(data.status=='success')
+			this.emit('channelUserList',null,data.channelId,data.userList || []);
+		else
+			this.emit('channelUserList',data.status,data.channelId);
 	},
 	'chat_normal': function(data){
-		if(typeof(data.fromUserId)=='number' && typeof(data.msg)=='string')
-			_.emit('chatNormal',data.fromUserId,data.msg);
+		if(this._checkId(data.fromUserId) && typeof(data.msg)=='string'){
+			if(this.cacheUser.has(data.formUserId))
+				this.emit('chatNormal',data.time,data.fromUserId,this.cacheUser.get(data.formUserId).username,data.msg);
+			else{
+				this.getProfile(data.fromUserId,function(status,userId,profile){
+					this.emit(
+						'chatNormal',
+						data.time,
+						data.fromUserId,
+						status=='success'? profile.username:null,
+						data.msg
+					);
+				});
+			}
+		}
 	},
 	'chat_private': function(data){
-		if('status' in data){
-			this.emit('chatPrivate',data.status);
-		}else if(typeof(data.fromUserId)=='number' && typeof(data.msg)=='string' && (data.toUserId===this.userId || data.fromUserId===this.userId))
-			this.emit('chatPrivate',null,data.fromUserId,data.toUserId,data.msg);
+		if(this._checkId(data.fromUserId) && typeof(data.msg)=='string'){
+			if(this.cacheUser.has(data.formUserId))
+				this.emit('chatPrivate',data.time,data.fromUserId,this.cacheUser.get(data.formUserId).username,data.msg);
+			else{
+				this.getProfile(data.fromUserId,function(status,userId,profile){
+					this.emit(
+						'chatPrivate',
+						data.time,
+						data.fromUserId,
+						status=='success'? profile.username:null,
+						data.msg
+					);
+				});
+			}
+		}
 	},
 	'user_getProfile': function(data){
-		if('status' in data)
-			this.emit('userGetProfile',this.status,this.profile || {});
+		if(data.status='success'){
+			this.cacheUser.set(data.profile.id,data.profile);
+			this.emit('getUserProfile',null,data.profile.id,data.profile);
+		}else
+			this.emit('getUserProfile',data.status,data.profile.id,data.profile);
 	},
 	'user_editProfile': function(data){
 		if('status' in data)
-			this.emit('userEditProfile',this.status);
+			this.emit('editUserProfile',data.status);
 	}
 }
 aChatClient.checkSupport=function(){
-	return ('WebSocket' in window);
+	return ('WebSocket' in window) && ('Map' in window);
 }
-aChatClient.prototype._check=function(callback){
+aChatClient.statusCode={
+	1000: 'logout',
+	4000: 'server maintenance',
+	4001: 'server locked',
+	4002: 'server overLoad',
+	4003: 'server error',
+	4100: 'auth timeout',
+	4101: 'account disabled',
+	4102: 'auth fail',
+	4103: 'repeat login',
+	4104: 'server kick'
+};
+aChatClient.prototype._checkLogin=function(callback){
 	if(!this.connected){
 		callback && callback('not connected');
 		return false;
@@ -132,6 +199,12 @@ aChatClient.prototype._check=function(callback){
 	}
 	return true;
 }
+aChatClient.prototype._checkId=(function(){
+	var reg=/^\d+$/;
+	return function(id){
+		return (typeof(id)=='number' && reg.test(id) && id>0);
+	}
+})();
 aChatClient.prototype._send=function(data){
 	if(this.link){
 		this.link.send(JSON.stringify(data));
@@ -146,7 +219,7 @@ aChatClient.prototype.auth=function(username,password){
 			'password': this.passwordHash(password)
 		};
 	}else if(!this.authData){
-		_.emit('error',new Error('缺少驗證資料'));
+		this.error(new Error('缺少驗證資料'));
 		return;
 	}
 	if(!this.link) this.connect();
@@ -156,25 +229,29 @@ aChatClient.prototype.auth=function(username,password){
 			'username': this.authData.username,
 			'password': this.authData.password
 		});
+		if(!this.autoReconnect)
+			this.authData=null;
 	}else{
-		this.once('connected',function(){
+		this.once('connect',function(){
 			this._send({
 				'action': 'auth',
 				'username': this.authData.username,
 				'password': this.authData.password
 			});
+			if(!this.autoReconnect)
+				this.authData=null;
 		});
 	}
 }
 aChatClient.prototype.channelList=function(callback){
-	if(!this._check(callback)) return;
+	if(!this._checkLogin(callback)) return;
 	this._send({'action': 'channel_list'});
 	callback && this.once('channelList',callback);
 }
 aChatClient.prototype.channelSwitch=function(channelId,callback){
-	if(!this._check(callback)) return;
+	if(!this._checkLogin(callback)) return;
 	if(!/^\d+$/.test(channelId)){
-		callback('channelId format error');
+		this.error(new Error('ChannelId format error.'));
 		return;
 	}
 	this._send({
@@ -184,85 +261,78 @@ aChatClient.prototype.channelSwitch=function(channelId,callback){
 	callback && this.once('channelSwitch',callback);
 }
 aChatClient.prototype.channelUserList=function(channelId,callback){
-	var cmd={'action': 'channelUserList'};
-	if(!callback){
+	var cmd={'action': 'channel_userList'};
+	if(typeof(channelId)==='function'){
 		callback=channelId;
 		channelId=undefined;
 	}else if(/^\d+$/.test(channelId) && channelId>0){
 		cmd.channelId=channelId;
-	}else return;
-	if(!this._check(callback)) return;
+	}
+	if(!this._checkLogin(callback)) return;
 	this._send(cmd);
 	callback && this.once('channelUserList',callback);
 }
-aChatClient.prototype.chatSend=function(type,toUserId,msg,callback){
-	if(!this._check(callback) || msg===undefined) return;
+aChatClient.prototype.chatSend=function(type,toUserId,msg){
+	if(!this._checkLogin() || msg===undefined) return false;
 	msg=msg.toString();
-	if(msg.length===0) return;
+	if(msg.length===0) return false;
 	if(type=='normal'){
 		this._send({
 			'action': 'chat_normal',
 			'msg': msg
 		});
-		callback && this.once('chatNormal',callback);
 	}else if(type=='private' && /^\d+$/.test(toUserId) && toUserId>0){
 		this._send({
 			'action': 'chat_private',
 			'toUserId': parseInt(toUserId,10),
 			'msg': msg
 		});
-		callback && this.once('chatPrivate',callback);
 	}
+	return true;
 }
 aChatClient.prototype.connect=function(){
 	var _=this;
 	var link=this.link=new WebSocket(this.server,'chatv1');
 	link.addEventListener('close',function(ev){
+		_.connected=false;
 		_.link=null;
 		_.userId=null;
 		switch(ev.code){
-			case 1000: _.emit('logout'); break;
-			case 1001: _.emit('serverClosing'); break;
-			case 1008: _.emit('ipBanned'); break;
-			case 4000: _.emit('serverMaintenance'); break;
-			case 4001: _.emit('serverLocked'); break;
-			case 4002: _.emit('serverOverLoad'); break;
-			case 4003: _.emit('serverError'); break;
-			case 4100: _.emit('authTimeout'); break;
-			case 4101: _.emit('accountDisabled'); break;
-			case 4102: _.emit('authFail'); break;
-			case 4103: _.emit('repeatLogin'); break;
-			case 4104: _.emit('serverKick'); break;
+			case 4101: _.emit('auth',null,'account disabled'); break;
+			case 4102: _.emit('auth',null,'fail'); break;
+			case 4103: _.emit('auth',null,'repeat login'); break;
 		}
-		_.emit('close',ev.code);
 		
 		if(ev.code===undefined){
-			_.emit('loseConnect');
 			if(_.autoReconnect && _.authData){
+				_.emit('close',null,null,true);
 				_.connect().auth();
-				_.emit('reconnect');
-			}
+			}else
+				_.emit('close',null,null,false);
 		}else{
-			_.channel=null;
 			_.authData=null;
+			_.channel=null;
+			_.emit('close',ev.code,aChatClient.statusCode[ev.code]);
 		}
 	});
 	link.addEventListener('error',function(error){
-		_.emit('error',error);
+		_.error(error);
 	});
 	link.addEventListener('message',function(data){
 		try{
-			data=JSON.parse(data);
+			data=JSON.parse(data.data);
 		}catch(e){
+			_.error(new Error('用戶端指令解析失敗'));
 			return;
 		}
-		if(typeof(data.action)==='string' && _.action.has(data.action)){
+		if(typeof(data.action)==='string' && _.action.hasOwnProperty(data.action))
 			_.action[data.action].call(_,data);
-		}
+		else
+			_.error(new Error('用戶端指令格式錯誤或'));
 	});
 	link.addEventListener('open',function(){
 		_.connected=true;
-		_.emit('connected');
+		_.emit('connect',null);
 	});
 }
 aChatClient.prototype.emit=function(evName){//evName,arg1,arg2...
@@ -273,19 +343,25 @@ aChatClient.prototype.emit=function(evName){//evName,arg1,arg2...
 		},this);
 	}
 }
+aChatClient.prototype.error=function(error){
+	if(this.event.error.length)
+		this.emit('error',error);
+	else
+		throw error;
+}
 aChatClient.prototype.logout=function(){
-	if(!this._check()) return;
+	if(!this._checkLogin()) return;
 	this._send({
 		'action': 'user_logout'
 	});
 }
 aChatClient.prototype.on=function(evName,func){
-	if(!this.event.hasOwnProperty(evName))
+	if(this.event.hasOwnProperty(evName))
 		this.event[evName].push(func);
 	return this;
 }
 aChatClient.prototype.once=function(evName,func){
-	if(!this.event.hasOwnProperty(evName)){
+	if(this.event.hasOwnProperty(evName)){
 		var _=this;
 		var autoRemove=function(){
 			_.removeListener(evName,autoRemove);
@@ -295,12 +371,47 @@ aChatClient.prototype.once=function(evName,func){
 	}
 	return this;
 }
-aChatClient.prototype.profile=function(profileData,callback){
-	if(!callback){
-		callback=profileData;
-		profileData=undefined;
+aChatClient.prototype.getProfile=function(userIds,callback){
+	if(typeof(userIds)==='function'){
+		callback=userIds;
+		userIds=undefined;
 	}
-	if(!this._check(callback)) return;
+	if(!this._checkLogin(callback)) return;
+	if(Array.isArray(userIds)){
+		var _=this;
+		if(!userIds.reduce(function(result,userId){
+			return result && _._checkId(userId);
+		},true)){
+			this.error(new Error('userIds 不合法'));
+			return false;
+		}
+	}else if(userIds===undefined){
+		userIds=[this.userId];
+	}else if(this._checkId(userIds)){
+		userIds=[userIds];
+	}else{
+		this.error(new Error('userIds 不合法'));
+		return false;
+	}
+	this._send({
+		'action': 'user_getProfile',
+		'userIds': userIds
+	});
+	if(callback){
+		var _=this;
+		var cbCheck=function(status,userId,profile){
+			var index=userIds.indexOf(userId);
+			if(index===-1) return;
+			callback.call(_,status,userId,profile);
+			userIds.splice(index,1);
+			if(!userIds.length) this.removeListener('getUserProfile',cbCheck);
+		};
+		this.on('getUserProfile',cbCheck);
+	}
+	return true;
+}
+aChatClient.prototype.editProfile=function(profileData,callback){
+	if(!this._checkLogin(callback)) return;
 	if(typeof(profileData)=='object'){
 		if(typeof(profileData.password)=='string' && profileData.password.length>=32){
 			var sendData={'action': 'user_editProfile'};
@@ -311,19 +422,17 @@ aChatClient.prototype.profile=function(profileData,callback){
 				}
 				sendData[field]=profileData[field];
 			}
+			sendData.password=this.passwordHash(sendData.password);
 			this._send(sendData);
-			callback && this.once('userEditProfile',callback);
+			callback && this.once('editUserProfile',callback);
 		}else{
 			this.emit('error',new Error('修改資料需要 password 欄位'));
 		}
-	}else{
-		this._send({'action': 'user_getProfile'});
-		callback && this.once('userGetProfile',callback);
 	}
 }
 aChatClient.prototype.removeListener=function(evName,func){
 	var index,event=this.event;
-	if(!event.hasOwnProperty(evName) && (index=this.event[evName].indexOf(func))!==-1)
+	if(event.hasOwnProperty(evName) && (index=this.event[evName].indexOf(func))!==-1)
 		event[evName].splice(index,1);
 	return this;
 }
