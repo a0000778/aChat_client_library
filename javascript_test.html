@@ -1,0 +1,256 @@
+<meta charset="utf8">
+<style>
+table{width:80%;}
+.ok{
+	background-color: #0F0;
+}
+.fail{
+	background-color: #F00;
+}
+</style>
+<table id="result"></table>
+<div id="testing">測試中...</div>
+<script src="javascript.js"></script>
+<script>
+const TEST_SERVER='ws://127.0.0.1:9700/';
+const TEST_USER='test';
+const TEST_PASS='9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08';
+const TEST_HASH=function(pass){return pass;};
+
+var result=(function(){
+	var out=document.getElementById('result');
+	return function(item,status,result){
+		var tr=document.createElement('tr');
+		tr.className=status? 'ok':'fail';
+		var td_item=document.createElement('td');
+		td_item.textContent=item;
+		var td_result=document.createElement('td');
+		td_result.textContent=result || (status? 'OK':'Fail');
+		tr.appendChild(td_item);
+		tr.appendChild(td_result);
+		out.appendChild(tr);
+		console.log('[TEST] %s: %s',item,result || (status? 'OK':'Fail'));
+	}
+})();
+
+var client;
+var test=[];
+function nextTest(){
+	if(test.length) setTimeout.apply(window,[test.shift(),0].concat(Array.prototype.slice.call(arguments)));
+	else document.getElementById('testing').style.display='none';
+}
+
+test.push(function(){
+	var support=aChatClient.checkSupport();
+	result('瀏覽器支援',support);
+	if(support){
+		client=new aChatClient({
+			'passwordHash': TEST_HASH,
+			'server': TEST_SERVER
+		});
+		client.on('error',function(error){
+			console.error(error);
+			result('未分類錯誤',false,error);
+		});
+		nextTest();
+	}
+});
+
+test.push(function(){//連線測試
+	client
+		.once('connect',function(error){
+			if(error)
+				result('與伺服器建立連線',false);
+			else
+				nextTest();
+		})
+		.connect()
+	;
+});
+test.push(function(){//連線測試(驗證超時)
+	client
+		.once('close',function(code,reason,autoReconnect){
+			if(code!=4100)
+				result('連線測試(驗證超時)',false,code+(reason? ': '+reason:''));
+			else if(autoReconnect)
+				result('連線測試(驗證超時)',false,'未驗證狀態下斷線不應自動重連');
+			else{
+				result('連線測試(驗證超時)',true);
+				nextTest();
+			}
+		})
+	;
+});
+test.push(function(){//驗證測試(驗證失敗)
+	client
+		.once('auth',function(error,status){
+			if(error){
+				result('驗證測試(驗證失敗)',false,error);
+			}else{
+				result('驗證測試(驗證失敗)',status=='fail');
+				if(status=='fail') nextTest();
+			}
+		})
+		.auth(TEST_USER,TEST_PASS+'ERROR');
+});
+test.push(function(){//驗證測試(驗證成功)
+	client
+		.once('auth',function(error,status){
+			if(error){
+				result('驗證測試(驗證成功)',false,error);
+			}else if(status=='success'){
+				result('驗證測試(驗證成功)',true);
+				nextTest();
+			}else{
+				result('驗證測試(驗證成功)',false,status);
+			}
+		})
+		.auth(TEST_USER,TEST_PASS);
+});
+test.push(function(){//發言測試(一般)
+	client
+		.once('chatNormal',function(time,fromUserId,fromUser,message){
+			if(fromUserId===client.userId && fromUser==client.username && message=='testmsg')
+				result('發言測試(一般)',true);
+			else
+				result('發言測試(一般)',false);
+			nextTest();
+		})
+		.chatSend('normal',null,'testmsg')
+	;
+});
+test.push(function(){//發言測試(密頻)
+	client
+		.once('chatPrivate',function(time,fromUserId,fromUser,message){
+			if(fromUserId===client.userId && fromUser==client.username && message=='testmsg')
+				result('發言測試(密頻)',true);
+			else
+				result('發言測試(密頻)',false);
+			nextTest();
+		})
+		.chatSend('private',client.userId,'testmsg')
+	;
+});
+test.push(function(){//頻道列表
+	client
+		.once('channelList',function(error,list){
+			if(error){
+				result('頻道列表',false,error);
+				nextTest([]);
+				return;
+			}
+			result('頻道列表',true);
+			nextTest(list);
+		})
+		.channelList()
+	;
+});
+test.push(function(channelList){//頻道切換
+	if(!channelList.length){
+		result('頻道切換',false,'頻道列表為空，或頻道列表測試失敗');
+		nextTest();
+	}
+	client
+		.once('channelSwitch',function(error,type,channelId){
+			if(error){
+				result('頻道切換',false,error);
+				nextTest();
+				return;
+			}
+			if(type!=='normal'){
+				result('頻道切換',false,'切換類型不符合：'+type);
+				nextTest();
+				return;
+			}
+			result('頻道切換',true);
+			nextTest();
+		})
+		.channelSwitch(channelList[0].channelId)
+	;
+});
+test.push(function(){//頻道在線名單
+	client
+		.once('channelUserList',function(error,channelId,userList){
+			if(error){
+				result('頻道在線名單',false,error);
+				nextTest();
+				return;
+			}
+			if(channelId){
+				result('頻道在線名單',true);
+			}else{
+				result('頻道在線名單',false,'返回頻道ID異常：'+channelId);
+			}
+			nextTest();
+		})
+		.channelUserList()
+	;
+});
+test.push(function(){//取得使用者資料(自己)
+	client
+		.once('getUserProfile',function(error,userId,aResult){
+			if(error){
+				result('取得使用者資料(自己)',false,error);
+			}else if(userId!==client.userId){
+				result('取得使用者資料(自己)',false,'使用者ID不符');
+			}else{
+				result('取得使用者資料(自己)',true);
+			}
+			nextTest();
+		})
+		.getProfile()
+	;
+});
+test.push(function(){//取得使用者資料(指定ID)
+	client
+		.once('getUserProfile',function(error,userId,aResult){
+			if(error){
+				result('取得使用者資料(指定ID)',false,error);
+			}else if(userId!==client.userId){
+				result('取得使用者資料(指定ID)',false,'使用者ID不符');
+			}else{
+				result('取得使用者資料(指定ID)',true);
+			}
+			nextTest(aResult);
+		})
+		.getProfile(client.userId)
+	;
+});
+test.push(function(profile){//修改使用者資料
+	client
+		.once('editUserProfile',function(aResult){
+			if(aResult==='fail'){
+				result('修改使用者資料',false,'修改失敗');
+			}else if(aResult==='auth fail'){
+				result('修改使用者資料',false,'使用者ID不符');
+			}else if(aResult==='success'){
+				result('修改使用者資料',true);
+			}else{
+				result('修改使用者資料',false,'未知錯誤');
+			}
+			nextTest();
+		})
+		.editProfile({
+			'email': profile.email,
+			'password': TEST_PASS
+		})
+	;
+});
+test.push(function(){
+	client
+		.once('close',function(code,reason,autoReconnect){
+			if(autoReconnect){
+				result('登出',false,'不應自動重連');
+			}else if(code!==1000){
+				result('登出',false,'狀態碼不為 1000: '+code);
+			}else{
+				result('登出',true);
+			}
+			nextTest();
+		})
+		.logout()
+	;
+})
+
+nextTest();
+</script>
