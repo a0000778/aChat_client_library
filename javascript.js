@@ -138,12 +138,12 @@ aChatClient.action={
 			if(this.cacheUser.has(data.formUserId))
 				this.emit('chatNormal',data.time,data.fromUserId,this.cacheUser.get(data.formUserId).username,data.msg);
 			else{
-				this.getProfile(data.fromUserId,function(status,userId,profile){
+				this.getProfile(data.fromUserId,function(error,userId,profile){
 					this.emit(
 						'chatNormal',
 						data.time,
 						data.fromUserId,
-						status=='success'? profile.username:null,
+						error? null:profile.username,
 						data.msg
 					);
 				});
@@ -155,12 +155,12 @@ aChatClient.action={
 			if(this.cacheUser.has(data.formUserId))
 				this.emit('chatPrivate',data.time,data.fromUserId,this.cacheUser.get(data.formUserId).username,data.msg);
 			else{
-				this.getProfile(data.fromUserId,function(status,userId,profile){
+				this.getProfile(data.fromUserId,function(error,userId,profile){
 					this.emit(
 						'chatPrivate',
 						data.time,
 						data.fromUserId,
-						status=='success'? profile.username:null,
+						error? null:profile.username,
 						data.msg
 					);
 				});
