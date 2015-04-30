@@ -27,7 +27,11 @@ function aChatClient(config){
 		/*
 		auth args
 		- error
-		- status
+		- status:
+			- account disabled: 帳號已停用
+			- fail: 登入失敗
+			- repeat login: 重複登入
+			- success: 成功登入
 		*/
 		'auth': [],
 		/*
@@ -39,7 +43,9 @@ function aChatClient(config){
 		/*
 		channelSwitch args
 		- error
-		- type (normal,force)
+		- type:
+			- normal
+			- force
 		- channelId
 		*/
 		'channelSwitch': [],
