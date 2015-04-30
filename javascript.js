@@ -16,6 +16,7 @@ function aChatClient(config){
 	config=config || {};
 	this.action={};
 	this.userId=null;
+	this.username=null;
 	this.authData=null;
 	this.autoReconnect=('autoReconnect' in config)? config.autoReconnect:true;
 	this.channel=null;
@@ -110,7 +111,11 @@ aChatClient.action={
 	'auth': function(data){
 		if(data.status=='success' && /^\d$/.test(data.userId) && data.userId>0){
 			this.userId=parseInt(data.userId,10);
-			this.emit('auth',null,'success');
+			this.getProfile(this.userId,function(error,userId,profile){
+				if(!error && userId===this.userId)
+					this.username=profile.username;
+				this.emit('auth',null,'success');
+			});
 		}
 	},
 	'channel_list': function(data){
@@ -303,6 +308,7 @@ aChatClient.prototype.connect=function(){
 		_.connected=false;
 		_.link=null;
 		_.userId=null;
+		_.username=null;
 		switch(ev.code){
 			case 4101: _.emit('auth',null,'account disabled'); break;
 			case 4102: _.emit('auth',null,'fail'); break;
