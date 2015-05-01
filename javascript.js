@@ -174,10 +174,10 @@ aChatClient.action={
 	},
 	'user_getProfile': function(data){
 		if(data.status='success'){
-			this.cacheUser.set(data.profile.id,data.profile);
-			this.emit('getUserProfile',null,data.profile.id,data.profile);
+			this.cacheUser.set(data.profile.userId,data.profile);
+			this.emit('getUserProfile',null,data.profile.userId,data.profile);
 		}else
-			this.emit('getUserProfile',data.status,data.profile.id,data.profile);
+			this.emit('getUserProfile',data.status,data.profile.userId,data.profile);
 	},
 	'user_editProfile': function(data){
 		if('status' in data)
