@@ -121,8 +121,8 @@ test.push(function(){//發言測試(一般)
 });
 test.push(function(){//發言測試(密頻)
 	client
-		.once('chatPrivate',function(time,fromUserId,fromUser,message){
-			if(fromUserId===client.userId && fromUser==client.username && message=='testmsg')
+		.once('chatPrivate',function(time,fromUserId,fromUser,toUserId,toUser,message){
+			if(fromUserId===client.userId && fromUser==client.username && toUserId===client.userId && toUser==client.username && message=='testmsg')
 				result('發言測試(密頻)',true);
 			else
 				result('發言測試(密頻)',false);

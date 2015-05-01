@@ -45,8 +45,8 @@ function aChatClient(config){
 		channelSwitch args
 		- error
 		- type:
-			- normal
-			- force
+			- normal: 由用戶端進行的移動
+			- force: 由伺服端、管理者強制進行的移動
 		- channelId
 		*/
 		'channelSwitch': [],
@@ -82,6 +82,8 @@ function aChatClient(config){
 		- send time
 		- from user id
 		- from username
+		- to user id
+		- to username
 		- message
 		*/
 		'chatPrivate': [],
@@ -141,7 +143,7 @@ aChatClient.action={
 	'chat_normal': function(data){
 		if(this._checkId(data.fromUserId) && typeof(data.msg)=='string'){
 			if(this.cacheUser.has(data.formUserId))
-				this.emit('chatNormal',data.time,data.fromUserId,this.cacheUser.get(data.formUserId).username,data.msg);
+				this.emit('chatNormal',data.time,data.fromUserId,this.cacheUser.get(data.fromUserId).username,data.msg);
 			else{
 				this.getProfile(data.fromUserId,function(error,userId,profile){
 					this.emit(
@@ -156,20 +158,18 @@ aChatClient.action={
 		}
 	},
 	'chat_private': function(data){
-		if(this._checkId(data.fromUserId) && typeof(data.msg)=='string'){
-			if(this.cacheUser.has(data.formUserId))
-				this.emit('chatPrivate',data.time,data.fromUserId,this.cacheUser.get(data.formUserId).username,data.msg);
-			else{
-				this.getProfile(data.fromUserId,function(error,userId,profile){
-					this.emit(
-						'chatPrivate',
-						data.time,
-						data.fromUserId,
-						error? null:profile.username,
-						data.msg
-					);
+		if(this._checkId(data.fromUserId) && this._checkId(data.toUserId) && typeof(data.msg)=='string'){
+			var findUsername=[];
+			this.cacheUser.has(data.fromUserId) || findUsername.push(data.fromUserId);
+			this.cacheUser.has(data.toUserId) || findUsername.push(data.toUserId);
+			if(findUsername.length){
+				this.getProfile(findUsername,function(error,userId){
+					findUsername.splice(findUsername.indexOf(userId),1);
+					if(!findUsername.length)
+						this.emit('chatPrivate',data.time,data.fromUserId,this.cacheUser.get(data.fromUserId).username,data.toUserId,this.cacheUser.get(data.toUserId).username,data.msg);
 				});
-			}
+			}else
+				this.emit('chatPrivate',data.time,data.fromUserId,this.cacheUser.get(data.fromUserId).username,data.toUserId,this.cacheUser.get(data.toUserId).username,data.msg);
 		}
 	},
 	'user_getProfile': function(data){
