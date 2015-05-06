@@ -9,6 +9,7 @@ Tested on Chrome 42, FireFox 35, Opera 27 and Safari 8
 config.autoReconnect	boolean		true	斷線自衝重連
 config.passwordHash		function	(必填)	密碼加密方法
 config.server			string		(必填)	伺服器
+config.httpServer		string		null	HTTP API伺服器，null則無法使用註冊、忘記密碼等API
 */
 function aChatClient(config){
 	if(!this.constructor.checkSupport())
@@ -128,6 +129,7 @@ function aChatClient(config){
 	this.link=null;
 	this.passwordHash=config.passwordHash;
 	this.server=config.server;
+	this.httpServer=config.httpServer || null;
 	
 	var action,actionDefault=this.constructor.action;
 	for(action in actionDefault){
@@ -236,6 +238,18 @@ aChatClient.statusCode={
 	4103: 'repeat login',
 	4104: 'server kick'
 };
+aChatClient.prototype._ajax=function(method,path,data,callback){
+	var xhr=new XMLHttpRequest();
+	xhr.addEventListener('error',function(e){
+		callback(e);
+	});
+	xhr.addEventListener('load',function(e){
+		callback(xhr.responseText);
+	});
+	xhr.open(method,this.httpServer+path);
+	xhr.setRequestHeader('Content-Type', 'application/json');
+	xhr.send(JSON.stringify(data));
+}
 aChatClient.prototype._checkLogin=function(callback){
 	if(!this.connected){
 		callback && callback('not connected');
@@ -338,6 +352,15 @@ aChatClient.prototype.chatSend=function(type,toUserId,msg){
 	}
 	return true;
 }
+aChatClient.prototype.checkEmail=function(code,callback){
+	if(this.httpServer===null){
+		callback('httpServer not found');
+		return;
+	}
+	this._ajax('post','/v1/mail',{
+		'code': code
+	},callback);
+}
 aChatClient.prototype.connect=function(){
 	var _=this;
 	var link=this.link=new WebSocket(this.server,'chatv1');
@@ -397,6 +420,15 @@ aChatClient.prototype.error=function(error){
 		this.emit('error',error);
 	else
 		throw error;
+}
+aChatClient.prototype.forgotPassword=function(email,callback){
+	if(this.httpServer===null){
+		callback('httpServer not found');
+		return;
+	}
+	this._ajax('post','/v1/forgotPassword',{
+		'email': email
+	},callback);
 }
 aChatClient.prototype.logout=function(){
 	if(!this._checkLogin()) return;
@@ -478,6 +510,26 @@ aChatClient.prototype.editProfile=function(profileData,callback){
 			this.emit('error',new Error('修改資料需要 password 欄位'));
 		}
 	}
+}
+aChatClient.prototype.register=function(username,email,password,callback){
+	if(this.httpServer===null){
+		callback('httpServer not found');
+		return;
+	}
+	this._ajax('post','/v1/register',{
+		'username': username,
+		'email': email,
+		'password': this.passwordHash(password)
+	},callback);
+}
+aChatClient.prototype.resetPassword=function(code,callback){
+	if(this.httpServer===null){
+		callback('httpServer not found');
+		return;
+	}
+	this._ajax('post','/v1/resetPassword',{
+		'code': code
+	},callback);
 }
 aChatClient.prototype.removeListener=function(evName,func){
 	var index,event=this.event;
