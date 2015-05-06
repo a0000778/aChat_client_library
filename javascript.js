@@ -36,6 +36,16 @@ function aChatClient(config){
 		*/
 		'auth': [],
 		/*
+		channelExit args
+		- userId
+		*/
+		'channelExit': [],
+		/*
+		channelJoin args
+		- userId
+		*/
+		'channelJoin': [],
+		/*
 		channelList args
 		- error
 		- channel list
@@ -43,8 +53,11 @@ function aChatClient(config){
 		'channelList': [],
 		/*
 		channelSwitch args
-		- error
+		- error:
+			- full: 目標頻道人數已滿
+			- not exists: 目標頻道不存在
 		- type:
+			- default: 切換至預設頻道(所在頻道被刪除、剛連上伺服器時出現)
 			- normal: 由用戶端進行的移動
 			- force: 由伺服端、管理者強制進行的移動
 		- channelId
@@ -70,6 +83,12 @@ function aChatClient(config){
 		*/
 		'connect': [],
 		/*
+		chatGlobal args
+		- send time
+		- message
+		*/
+		'chatGlobal': [],
+		/*
 		chatNormal args
 		- send time
 		- from user id
@@ -77,6 +96,12 @@ function aChatClient(config){
 		- message
 		*/
 		'chatNormal': [],
+		/*
+		chatNotice args
+		- send time
+		- message
+		*/
+		'chatNotice': [],
 		/*
 		chatPrivate args
 		- send time
@@ -120,6 +145,12 @@ aChatClient.action={
 			});
 		}
 	},
+	'channel_exit': function(data){
+		this.emit('channelExit',data.userId);
+	},
+	'channel_join': function(data){
+		this.emit('channelJoin',data.userId);
+	},
 	'channel_list': function(data){
 		data.list.forEach(function(ch){
 			this.cacheChannel.set(ch.channelId,ch);
@@ -140,6 +171,9 @@ aChatClient.action={
 		else
 			this.emit('channelUserList',data.status,data.channelId);
 	},
+	'chat_global': function(data){
+		this.emit('chatGlobal',data.time,data.msg);
+	},
 	'chat_normal': function(data){
 		if(this._checkId(data.fromUserId) && typeof(data.msg)=='string'){
 			if(this.cacheUser.has(data.formUserId))
@@ -156,6 +190,9 @@ aChatClient.action={
 				});
 			}
 		}
+	},
+	'chat_notice': function(data){
+		this.emit('chatNotice',data.time,data.msg);
 	},
 	'chat_private': function(data){
 		if(this._checkId(data.fromUserId) && this._checkId(data.toUserId) && typeof(data.msg)=='string'){
