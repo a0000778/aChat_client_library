@@ -7,7 +7,6 @@ Tested on Chrome 42, FireFox 35, Opera 27 and Safari 8
 /*
 項目						型態			預設值	說明
 config.autoReconnect	boolean		true	斷線自衝重連
-config.passwordHash		function	(必填)	密碼加密方法
 config.server			string		(必填)	伺服器
 config.httpServer		string		null	HTTP API伺服器，null則無法使用註冊、忘記密碼等API
 */
@@ -127,7 +126,6 @@ function aChatClient(config){
 		'editUserProfile': []
 	}
 	this.link=null;
-	this.passwordHash=config.passwordHash;
 	this.server=config.server;
 	this.httpServer=config.httpServer || null;
 	
@@ -268,6 +266,12 @@ aChatClient.prototype._checkId=(function(){
 		return (typeof(id)=='number' && reg.test(id) && id>0);
 	}
 })();
+aChatClient.prototype._passwordHash=function(password){
+	return new CryptoJS.algo.SHA256.init().update(CryptoJS.MD5(password)).finalize(password);
+}
+aChatClient.prototype._passwordHmac=function(question,password){
+	return CryptoJS.algo.HMAC.create(CryptoJS.algo.SHA256,password).update(question).finalize();
+}
 aChatClient.prototype._send=function(data){
 	if(this.link){
 		this.link.send(JSON.stringify(data));
@@ -279,7 +283,7 @@ aChatClient.prototype.auth=function(username,password){
 	if(username!==undefined && password!==undefined){
 		this.authData={
 			'username': username,
-			'password': this.passwordHash(password)
+			'password': this._passwordHash(password).toString()
 		};
 	}else if(!this.authData){
 		this.error(new Error('缺少驗證資料'));
@@ -503,16 +507,19 @@ aChatClient.prototype.getProfile=function(userIds,callback){
 aChatClient.prototype.editProfile=function(profileData,callback){
 	if(!this._checkLogin(callback)) return;
 	if(typeof(profileData)=='object'){
-		if(typeof(profileData.password)=='string' && profileData.password.length>=32){
+		if(typeof(profileData.password)=='string'){
 			var sendData={'action': 'user_editProfile'};
 			for(var field in profileData){
 				if(field=='action'){
 					this.emit('error',new Error('profile 不支援 action 欄位'));
 					return;
+				}else if(field=='newPassword'){
+					sendData[field]=this._passwordHash(profileData[field]);
+				}else{
+					sendData[field]=profileData[field];
 				}
-				sendData[field]=profileData[field];
 			}
-			sendData.password=this.passwordHash(sendData.password);
+			sendData.password=this._passwordHash(sendData.password).toString();
 			this._send(sendData);
 			callback && this.once('editUserProfile',callback);
 		}else{
