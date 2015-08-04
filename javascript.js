@@ -364,6 +364,7 @@ aChatClient.prototype.checkEmail=function(code,callback){
 	},callback);
 }
 aChatClient.prototype.connect=function(){
+	if(this.link) return;
 	var _=this;
 	var link=this.link=new WebSocket(this.server,'chatv1');
 	var connectFail=function(code){
