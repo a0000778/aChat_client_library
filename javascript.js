@@ -228,6 +228,7 @@ aChatClient.checkSupport=function(){
 }
 aChatClient.statusCode={
 	1000: 'logout',
+	1006: 'connection error',
 	4000: 'server maintenance',
 	4001: 'server locked',
 	4002: 'server overLoad',
@@ -294,7 +295,8 @@ aChatClient.prototype.auth=function(username,password){
 		if(!this.autoReconnect)
 			this.authData=null;
 	}else{
-		this.once('connect',function(){
+		this.once('connect',function(error){
+			if(error) return;
 			this._send({
 				'action': 'auth',
 				'username': this.authData.username,
@@ -364,6 +366,12 @@ aChatClient.prototype.checkEmail=function(code,callback){
 aChatClient.prototype.connect=function(){
 	var _=this;
 	var link=this.link=new WebSocket(this.server,'chatv1');
+	var connectFail=function(code){
+		if(code===1006){
+			_.removeListener('close',connectFail).emit('connect','connection fail');
+		}
+	}
+	this.on('close',connectFail);
 	link.addEventListener('close',function(ev){
 		_.connected=false;
 		_.link=null;
@@ -404,7 +412,7 @@ aChatClient.prototype.connect=function(){
 	});
 	link.addEventListener('open',function(){
 		_.connected=true;
-		_.emit('connect',null);
+		_.removeListener('close',connectFail).emit('connect',null);
 	});
 }
 aChatClient.prototype.emit=function(evName){//evName,arg1,arg2...
