@@ -10,11 +10,13 @@ table{width:80%;}
 </style>
 <table id="result"></table>
 <div id="testing">測試中...</div>
+<script src="md5.js"></script>
+<script src="hmac-sha256.js"></script>
 <script src="javascript.js"></script>
 <script>
 const TEST_SERVER='ws://127.0.0.1:9700/';
 const TEST_USER='test';
-const TEST_PASS='9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08';
+const TEST_PASS='test';
 const TEST_HASH=function(pass){return pass;};
 
 var result=(function(){
@@ -45,7 +47,6 @@ test.push(function(){
 	result('瀏覽器支援',support);
 	if(support){
 		client=new aChatClient({
-			'passwordHash': TEST_HASH,
 			'server': TEST_SERVER
 		});
 		client.on('error',function(error){
