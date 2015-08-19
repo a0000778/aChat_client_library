@@ -514,7 +514,7 @@ aChatClient.prototype.editProfile=function(profileData,callback){
 					this.emit('error',new Error('profile 不支援 action 欄位'));
 					return;
 				}else if(field=='newPassword'){
-					sendData[field]=this._passwordHash(profileData[field]);
+					sendData[field]=this._passwordHash(profileData[field]).toString();
 				}else{
 					sendData[field]=profileData[field];
 				}
