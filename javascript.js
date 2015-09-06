@@ -273,12 +273,13 @@ AChatClient.prototype._emit=function(evName){//evName,arg1,arg2...
 	}
 }
 AChatClient.prototype._passwordHash=function(password){
-	return new CryptoJS.algo.SHA256.init().update(CryptoJS.MD5(password)).finalize(password);
+	return new CryptoJS.algo.SHA256.init().update(CryptoJS.MD5(password)).finalize(password).toString();
 }
 AChatClient.prototype._passwordHmac=function(question,password){
-	return CryptoJS.algo.HMAC.create(CryptoJS.algo.SHA256,password)
+	return CryptoJS.algo.HMAC.create(CryptoJS.algo.SHA256,CryptoJS.enc.Hex.parse(password))
 		.update(CryptoJS.enc.Hex.parse(question))
 		.finalize()
+		.toString()
 	;
 }
 AChatClient.prototype._send=function(data){
@@ -462,7 +463,7 @@ AChatClient.prototype.createSession=function(username,password,callback){
 		throw new Error('缺少驗證資料');
 	var authData={
 		'username': username,
-		'password': this._passwordHash(password).toString()
+		'password': this._passwordHash(password)
 	};
 	if(!this.link) this.connect();
 	if(this.connected){
@@ -470,7 +471,7 @@ AChatClient.prototype.createSession=function(username,password,callback){
 			this._send({
 				'action': 'createSession',
 				'username': authData.username,
-				'answer': this._passwordHmac(question,authData.password).toString()
+				'answer': this._passwordHmac(question,authData.password)
 			});
 		});
 	}else{
@@ -480,7 +481,7 @@ AChatClient.prototype.createSession=function(username,password,callback){
 				this._send({
 					'action': 'createSession',
 					'username': authData.username,
-					'answer': this._passwordHmac(question,authData.password).toString()
+					'answer': this._passwordHmac(question,authData.password)
 				});
 			});
 		});
@@ -498,12 +499,12 @@ AChatClient.prototype.editProfile=function(password,profileData,callback){
 		if(field=='action')
 			throw new Error('profile 不支援 action 欄位');
 		else if(field=='password')
-			sendData[field]=this._passwordHash(profileData[field]).toString();
+			sendData[field]=this._passwordHash(profileData[field]);
 		else
 			sendData[field]=profileData[field];
 	}
 	this._createQuestion(function(question){
-		sendData.answer=this._passwordHmac(question,password).toString();
+		sendData.answer=this._passwordHmac(question,this._passwordHash(password));
 		this._send(sendData);
 	});
 	callback && this.once('editUserProfile',callback);
@@ -596,7 +597,7 @@ AChatClient.prototype.register=function(username,email,password,callback){
 	this._ajax('post','/v1/register',{
 		'username': username,
 		'email': email,
-		'password': this._passwordHash(password).toString()
+		'password': this._passwordHash(password)
 	},callback);
 }
 AChatClient.prototype.resetPassword=function(code,callback){
