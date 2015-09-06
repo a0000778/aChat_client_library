@@ -78,7 +78,7 @@ AChatClient.action={
 	},
 	'authBySession': function(data){
 		if(data.status=='success' && this._checkId(data.userId)){
-			this.userId=parseInt(data.userId,10);
+			this.userId=data.userId;
 			this.getProfile(this.userId,function(status,userId,profile){
 				if(status==='success' && userId===this.userId)
 					this.username=profile.username;
@@ -347,7 +347,7 @@ AChatClient.prototype.channelSwitch=function(channelId,callback){
 		throw new Error('ChannelId format error.');
 	this._send({
 		'action': 'channel_switch',
-		'channelId': parseInt(channelId,10)
+		'channelId': channelId
 	});
 	callback && this.once('channelSwitch',callback);
 }
@@ -388,7 +388,7 @@ AChatClient.prototype.chatSend=function(type,toUserId,msg){
 	}else if(type=='private' && this._checkId(toUserId)){
 		this._send({
 			'action': 'chat_private',
-			'toUserId': parseInt(toUserId,10),
+			'toUserId': toUserId,
 			'msg': msg
 		});
 	}
