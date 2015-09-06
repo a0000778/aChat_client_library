@@ -18,6 +18,7 @@ const TEST_SERVER='ws://127.0.0.1:9700/';
 const TEST_USER='test';
 const TEST_PASS='test';
 const TEST_HASH=function(pass){return pass;};
+var test_userId,test_session;
 
 var result=(function(){
 	var out=document.getElementById('result');
@@ -43,11 +44,12 @@ function nextTest(){
 }
 
 test.push(function(){
-	var support=aChatClient.checkSupport();
+	var support=AChatClient.checkSupport();
 	result('瀏覽器支援',support);
 	if(support){
-		client=new aChatClient({
-			'server': TEST_SERVER
+		client=new AChatClient({
+			'server': TEST_SERVER,
+			'autoLogin': false
 		});
 		client.on('error',function(error){
 			console.error(error);
@@ -69,8 +71,10 @@ test.push(function(){//連線測試
 	;
 });
 test.push(function(){//連線測試(驗證超時)
+	var timeout=setTimeout(result,20000,false,'未驗證狀態下不會超時');
 	client
 		.once('close',function(code,reason,autoReconnect){
+			clearTimeout(timeout);
 			if(code!=4100)
 				result('連線測試(驗證超時)',false,code+(reason? ': '+reason:''));
 			else if(autoReconnect)
@@ -82,31 +86,88 @@ test.push(function(){//連線測試(驗證超時)
 		})
 	;
 });
+test.push(function(){
+	client
+		.once('createSession',function(userId,session){
+			if(Number.isSafeInteger(userId) && userId>0 && typeof(session)==='string' && session.length===40){
+				test_userId=userId;
+				test_session=session;
+				result('Session 新增測試(驗證成功)',true);
+				nextTest();
+			}else
+				result('Session 新增測試(驗證成功)',false,'返回格式非預期');
+		})
+		.createSession(TEST_USER,TEST_PASS)
+	;
+});
 test.push(function(){//驗證測試(驗證失敗)
 	client
-		.once('auth',function(error,status){
-			if(error){
-				result('驗證測試(驗證失敗)',false,error);
-			}else{
-				result('驗證測試(驗證失敗)',status=='fail');
-				if(status=='fail') nextTest();
-			}
+		.once('auth',function(status){
+			result('驗證測試(驗證失敗)',status=='fail');
+			if(status=='fail') nextTest();
 		})
-		.auth(TEST_USER,TEST_PASS+'ERROR');
+		.authBySession(test_userId+1,test_session);
 });
 test.push(function(){//驗證測試(驗證成功)
 	client
-		.once('auth',function(error,status){
-			if(error){
-				result('驗證測試(驗證成功)',false,error);
-			}else if(status=='success'){
+		.once('auth',function(status){
+			if(status=='success'){
 				result('驗證測試(驗證成功)',true);
 				nextTest();
 			}else{
 				result('驗證測試(驗證成功)',false,status);
 			}
 		})
-		.auth(TEST_USER,TEST_PASS);
+		.authBySession(test_userId,test_session);
+});
+test.push(function(){//取得使用者資料(自己)
+	client
+		.once('getUserProfile',function(status,userId,aResult){
+			if(status!=='success'){
+				result('取得使用者資料(自己)',false,error);
+			}else if(userId!==client.userId){
+				result('取得使用者資料(自己)',false,'使用者ID不符');
+			}else{
+				result('取得使用者資料(自己)',true);
+			}
+			nextTest();
+		})
+		.getProfile()
+	;
+});
+test.push(function(){//取得使用者資料(指定ID)
+	client
+		.once('getUserProfile',function(status,userId,aResult){
+			if(status!=='success'){
+				result('取得使用者資料(指定ID)',false,error);
+			}else if(userId!==client.userId){
+				result('取得使用者資料(指定ID)',false,'使用者ID不符');
+			}else{
+				result('取得使用者資料(指定ID)',true);
+			}
+			nextTest(aResult);
+		})
+		.getProfile(client.userId)
+	;
+});
+test.push(function(profile){//修改使用者資料
+	client
+		.once('editUserProfile',function(aResult){
+			if(aResult==='fail'){
+				result('修改使用者資料',false,'修改失敗');
+			}else if(aResult==='auth fail'){
+				result('修改使用者資料',false,'使用者ID不符');
+			}else if(aResult==='success'){
+				result('修改使用者資料',true);
+			}else{
+				result('修改使用者資料',false,'未知錯誤');
+			}
+			nextTest();
+		})
+		.editProfile(TEST_PASS,{
+			'password': TEST_PASS
+		})
+	;
 });
 test.push(function(){//發言測試(一般)
 	client
@@ -134,12 +195,7 @@ test.push(function(){//發言測試(密頻)
 });
 test.push(function(){//頻道列表
 	client
-		.once('channelList',function(error,list){
-			if(error){
-				result('頻道列表',false,error);
-				nextTest([]);
-				return;
-			}
+		.once('channelList',function(list){
 			result('頻道列表',true);
 			nextTest(list);
 		})
@@ -152,18 +208,11 @@ test.push(function(channelList){//頻道切換
 		nextTest();
 	}
 	client
-		.once('channelSwitch',function(error,type,channelId){
-			if(error){
+		.once('channelSwitch',function(status,channelId){
+			if(status!=='success')
 				result('頻道切換',false,error);
-				nextTest();
-				return;
-			}
-			if(type!=='normal'){
-				result('頻道切換',false,'切換類型不符合：'+type);
-				nextTest();
-				return;
-			}
-			result('頻道切換',true);
+			else
+				result('頻道切換',true);
 			nextTest();
 		})
 		.channelSwitch(channelList[0].channelId)
@@ -185,56 +234,6 @@ test.push(function(){//頻道在線名單
 			nextTest();
 		})
 		.channelUserList()
-	;
-});
-test.push(function(){//取得使用者資料(自己)
-	client
-		.once('getUserProfile',function(error,userId,aResult){
-			if(error){
-				result('取得使用者資料(自己)',false,error);
-			}else if(userId!==client.userId){
-				result('取得使用者資料(自己)',false,'使用者ID不符');
-			}else{
-				result('取得使用者資料(自己)',true);
-			}
-			nextTest();
-		})
-		.getProfile()
-	;
-});
-test.push(function(){//取得使用者資料(指定ID)
-	client
-		.once('getUserProfile',function(error,userId,aResult){
-			if(error){
-				result('取得使用者資料(指定ID)',false,error);
-			}else if(userId!==client.userId){
-				result('取得使用者資料(指定ID)',false,'使用者ID不符');
-			}else{
-				result('取得使用者資料(指定ID)',true);
-			}
-			nextTest(aResult);
-		})
-		.getProfile(client.userId)
-	;
-});
-test.push(function(profile){//修改使用者資料
-	client
-		.once('editUserProfile',function(aResult){
-			if(aResult==='fail'){
-				result('修改使用者資料',false,'修改失敗');
-			}else if(aResult==='auth fail'){
-				result('修改使用者資料',false,'使用者ID不符');
-			}else if(aResult==='success'){
-				result('修改使用者資料',true);
-			}else{
-				result('修改使用者資料',false,'未知錯誤');
-			}
-			nextTest();
-		})
-		.editProfile({
-			'email': profile.email,
-			'password': TEST_PASS
-		})
 	;
 });
 test.push(function(){
