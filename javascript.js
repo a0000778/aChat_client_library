@@ -211,6 +211,7 @@ AChatClient.statusCode={
 	4100: 'auth timeout',
 	4101: 'account disabled',
 	4102: 'auth fail',
+	4103: 'repeat login',
 	4104: 'server kick'
 };
 AChatClient.prototype._ajax=function(method,path,data,callback){
@@ -422,8 +423,9 @@ AChatClient.prototype.connect=function(){
 		_._question=false;
 		
 		switch(ev.code){
-			case 4101: _._emit('auth','account disabled'); break;
+			case 4101: _._emit('auth',AChatClient.statusCode[4101]); break;
 			case 4102: _._emit('auth','fail'); break;
+			case 4103: _._emit('auth',AChatClient.statusCode[4103]); break;
 		}
 		
 		if(ev.code===undefined){
