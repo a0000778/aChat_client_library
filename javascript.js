@@ -10,6 +10,7 @@ function AChatClient(config){
 		return false;
 	config=config || {};
 	this.action={};
+	this.actionGroup=null;
 	this.userId=null;
 	this.username=null;
 	this.authData=null;
@@ -79,6 +80,7 @@ AChatClient.action={
 	'authBySession': function(data){
 		if(data.status=='success' && this._checkId(data.userId)){
 			this.userId=data.userId;
+			this.actionGroup=data.actionGroup;
 			this.getProfile(this.userId,function(status,userId,profile){
 				if(status==='success' && userId===this.userId)
 					this.username=profile.username;
@@ -419,6 +421,7 @@ AChatClient.prototype.connect=function(){
 	link.addEventListener('close',function(ev){
 		_.connected=false;
 		_.link=null;
+		_.actionGroup=null;
 		_.userId=null;
 		_.username=null;
 		_._cacheChannel=null;
