@@ -151,7 +151,10 @@ AChatClient.action={
 			this._emit('channelUserList',data.status,data.channelId);
 	},
 	'chat_global': function(data){
-		this._emit('chatGlobal',new Date(data.time),data.msg);
+		if(data.hasOwnProperty('status'))
+			this._emit('chatGlobal',data.status);
+		else
+			this._emit('chatGlobal',new Date(data.time),data.msg);
 	},
 	'chat_normal': function(data){
 		if(this._checkId(data.fromUserId) && typeof(data.msg)=='string'){
