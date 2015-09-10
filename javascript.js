@@ -419,6 +419,7 @@ AChatClient.prototype.connect=function(){
 	}
 	this.on('close',connectFail);
 	link.addEventListener('close',function(ev){
+		var networkError=(ev.code===1006 && _.connected);
 		_.connected=false;
 		_.link=null;
 		_.actionGroup=null;
@@ -434,7 +435,7 @@ AChatClient.prototype.connect=function(){
 			case 4103: _._emit('auth',AChatClient.statusCode[4103]); break;
 		}
 		
-		if(ev.code===undefined){
+		if(ev.code===undefined || networkError){
 			if(_.autoReconnect && _.authData){
 				_._emit('close',null,null,true);
 				_.connect().authBySession(this.channelList);
