@@ -417,6 +417,13 @@ AChatClient.prototype.connect=function(){
 			_.removeListener('close',connectFail)._emit('connect','connection fail');
 		}
 	}
+	var waitReconnect=function(){
+		var evFunc=function(){
+			removeEventListener('online',evFunc);
+			_.authBySession();
+		}
+		addEventListener('online',evFunc);
+	}
 	this.on('close',connectFail);
 	link.addEventListener('close',function(ev){
 		var networkError=(ev.code===1006 && _.connected);
@@ -438,7 +445,10 @@ AChatClient.prototype.connect=function(){
 		if(ev.code===undefined || networkError){
 			if(_.autoReconnect && _.authData){
 				_._emit('close',null,null,true);
-				_.connect().authBySession(this.channelList);
+				if(_._checkOnline())
+					_.authBySession();
+				else
+					waitReconnect();
 			}else
 				_._emit('close',null,null,false);
 		}else{
