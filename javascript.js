@@ -298,7 +298,7 @@ AChatClient.prototype._send=function(data){
 AChatClient.prototype.authBySession=function(userId,session,callback){
 	var authData;
 	if(this._checkId(userId) && typeof(session)==='string'){
-		authData={
+		authData=this.authData={
 			'userId': userId,
 			'session': session
 		};
