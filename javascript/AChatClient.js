@@ -13,10 +13,19 @@ function AChatClient(config,callback){
 	if(!(config.wsServer || config.httpServer))
 		throw new Error('必須指定 wsServer 或 httpServer');
 	//設定檔
-	this.wsServer=config.wsServer;
-	this.httpServer=config.httpServer;
+	Object.defineProperty(this,'wsServer',{
+		'enumerable': true,
+		'value': config.wsServer
+	});
+	Object.defineProperty(this,'httpServer',{
+		'enumerable': true,
+		'value': config.httpServer
+	});
+	Object.defineProperty(this,'keyPrefix',{
+		'enumerable': true,
+		'value': config.keyPrefix || (this.wsServer || this.httpServer).match(/\/\/[a-z0-9-]+(\.[a-z0-9-]+)*(:\d+)?/i)[0].slice(2)+'_'
+	});
 	this.autoReconnect=config.autoReconnect || true;
-	this.keyPrefix=config.keyPrefix || (this.wsServer || this.httpServer).match(/\/\/[a-z0-9-]+(\.[a-z0-9-]+)*(:\d+)?/i)[0].slice(2)+'_';
 	//內部變數 - 通用
 	this._event={
 		'error': new Map(),
@@ -45,9 +54,11 @@ function AChatClient(config,callback){
 	this.userId=null;
 	this.username=null;
 	Object.defineProperty(this,'canAutoAuth',{
+		'enumerable': true,
 		'get': function(){ return !!_._authData; }
 	});
 	Object.defineProperty(this,'connected',{
+		'enumerable': true,
 		'get': function(){ return _._link && _._link.readyState===WebSocket.OPEN; }
 	});
 
