@@ -264,11 +264,14 @@ AChatClient.prototype._ajax=function(method,path,data,callback){
 		callback(new Error('no network'));
 		return;
 	}
+	var _=this;
 	var xhr=new XMLHttpRequest();
 	xhr.addEventListener('error',function(e){
+		_._debug('[AJAX] %s %s %o: %o',method.toUpperCase(),path,data,e);
 		callback(e);
 	});
 	xhr.addEventListener('load',function(e){
+		_._debug('[AJAX] %s %s %o: %s',method.toUpperCase(),path,data,xhr.responseText);
 		callback(undefined,xhr.responseText);
 	});
 	xhr.open(method,this.httpServer+path);
