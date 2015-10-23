@@ -726,7 +726,10 @@ AChatClient.prototype.resetPassword=function(code,callback){
 AChatClient.prototype.removeListener=function(evName,func){
 	var index,event=this._event;
 	if(!evName)
-		this._event={};
+		this._event={
+			'error': new Map(),
+			'_question': new Map()
+		};
 	else if(this._event.hasOwnProperty(evName)){
 		if(func) this._event[evName].delete(func);
 		else this._event[evName].clear();
