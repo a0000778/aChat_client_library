@@ -6,6 +6,47 @@ for aChat v2.0.0-beta
 by a0000778
 */
 (function(CryptoJS,Date,Error,JSON,Map,Object,Set,WebSocket,XMLHttpRequest,localStorage){
+var clientInfo=(function browser(){
+	var ua=navigator.userAgent;
+	var result='';
+	
+	var osInfo;
+	if(osInfo=ua.match(/Windows NT (\d+\.\d+)/)){
+		result+='Windows ';
+		switch(osInfo[1]){
+			case '5.1': result+='XP'; break;
+			case '6.0': result+='Vista'; break;
+			case '6.1': result+='7'; break;
+			case '6.2': result+='8'; break;
+			case '6.3': result+='8.1'; break;
+			case '10.0': result+='10'; break;
+		}
+	}else if(osInfo=ua.match(/Mac OS X (\d+_\d+)/)){
+		result+='OS X ';
+		result+=osInfo[1].replace('_','.');
+	}else if(osInfo=ua.indexOf('Linux')){
+		result.os='Linux';
+	}else if(osInfo=ua.indexOf('FreeBSD')){
+		result.os='FreeBSD';
+	}else{
+		result.os='Unknown';
+		result.osVer='';
+	}
+	
+	var browserInfo;
+	if(browserInfo=ua.match(/Edge\/(\d+)/)){
+		result+='/Edge '+browserInfo[1];
+	}else if(browserInfo=ua.match(/Chrome\/(\d+)/)){
+		result+='/Chrome '+browserInfo[1];
+	}else if(browserInfo=ua.match(/Firefox\/(\d+)/)){
+		result+='/Firefox '+browserInfo[1];
+	}else if(browserInfo=ua.match(/Version\/(\d+)(?:.\d)+ Safari/)){
+		result+='/Safari '+browserInfo[1];
+	}else{
+		result+='/Unknown';
+	}
+	return result;
+})();
 function AChatClient(config,callback){
 	if(!this.constructor.checkSupport())
 		return false;
@@ -423,7 +464,7 @@ AChatClient.prototype._connect=function(){
 	link.addEventListener('open',function(){
 		_._debug('[WebSocket] 連線已建立');
 		_._reConnectCount=0;
-		_._send({'action':'client','client':'aChatClientLibrary for Javascript '+AChatClient.version})
+		_._send({'action':'client','client':clientInfo+'/aChatClientLibrary for Javascript '+AChatClient.version})
 		_._emit('_connect');
 	});
 }
