@@ -72,6 +72,22 @@ MIT Licence
 * `sendTime` (Date) 發送時間
 * `message` (String) 發送內容
 
+### chatLogQuery
+聊天記錄查詢結果
+
+* `messages` (Array)
+	* (Object)
+		* `messageId` (Number) 訊息編號
+		* `time` (Date) 發送時間
+		* `fromUserId` (Number) 發送者 userId
+		* `toUserId` (Number or Null) 接收者 userId，無特定對象則為 Null
+		* `channelId` (Number or Null) 頻道 ID，密頻或全伺服器廣播則為 Null
+		* `type` (String) 發言類型
+			* `normal` 一般
+			* `private` 密頻
+			* `global` 廣播
+		* `message` (String) 發言內容
+
 ### chatNormal
 一般訊息
 
@@ -271,6 +287,20 @@ MIT Licence
 	* `private` 密頻
 * `toUserId` (Number) 發送目標，僅密頻有效
 * `msg` (String) 訊息
+
+### chatLogQuery(filter,callback)
+查詢聊天記錄
+
+* filter (Object) 條件過濾
+	* `type` (String) 查詢類型
+		* `public` 公開訊息，包含公告、公開聊天訊息
+		* `private` 私人訊息，包含密頻、管理員密頻
+	* `channelId` (Number,選擇性) 查詢頻道，查詢類型為 `public` 時有效
+	* `startTime` (Date,選擇性) 查詢在此之後發送的訊息
+	* `endTime` (Date,選擇性) 查詢在此之前發送的訊息
+	* `startMessageId` (Number,選擇性) 查詢在此編號之後的訊息
+	* `limit` (Number,選擇性) 查詢結果數量限制，預設 100，最大 500
+* `callback` (Function,選擇性) 返回結果，附帶查詢過濾，參數見事件 chatLogQuery
 
 ### checkEmail(code,callback)
 驗證信箱

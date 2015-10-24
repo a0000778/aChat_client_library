@@ -37,8 +37,10 @@ function AChatClient(config,callback){
 	this._cache_channelUserList=new Set();
 	this._cache_userProfile=new Map();
 	this._clearCacheInterval=null;
+	//內部變數 - 等待查詢
 	this._inQuery_channelUserList=new Set();
 	this._inQuery_userProfile=new Set();
+	this._inQuery_chatLog=false;
 	//內部變數 - 連線驗證
 	this._authData=null;
 	this._db=null;
@@ -220,7 +222,33 @@ AChatClient.action={
 		});
 	},
 	'chatlog_query': function(data){
-		
+		if(!data.result.length){
+			this._emit('chatLogQuery',data.result);
+			return;
+		}
+		var messages=data.result;
+		var findUser=[];
+		for(var message of messages){
+			message.time=new Date(message.time);
+			message.fromUserId && findUser.push(message.fromUserId);
+			message.toUserId && findUser.push(message.toUserId);
+		}
+		findUser=findUser.filter(function(v,i,o){
+			return o.indexOf(v)===i;
+		});
+		var findUserCount=findUser.length;
+		this.getProfile(findUser,function(status,userId,result){
+			if(status!=='success') result.username=null;
+			for(var message of messages){
+				if(message.fromUserId===userId)
+					message.fromUsername=result.username;
+				if(message.toUserId===userId)
+					message.toUsername=result.username;
+			}
+			
+			if(!--findUserCount)
+				this._emit('chatLogQuery',messages);
+		});
 	},
 	'user_getProfile': function(data,vEmit){
 		if(data.status=='success' && !vEmit){
@@ -577,6 +605,58 @@ AChatClient.prototype.channelUserList=function(channelId,callback){
 			'action': 'channel_userList',
 			'channelId': channelId
 		});
+	}
+}
+AChatClient.prototype.chatLogQuery=function(filter,callback){
+	if(!this._inited || !this._checkLogin(callback)) return;
+	filter=filter || {};
+	if(filter.type!=='public' && filter.type!=='private')
+		throw new Error('參數 filter.type 未填或格式錯誤！');
+	for(var field in filter){
+		if(['type','channelId','startTime','endTime','startMessageId','limit'].indexOf(field)===-1)
+			throw new Error('包含不被支援的過濾條件！');
+		if((field=='channelId' || field=='startMessageId') && !this._checkId(filter[field]))
+			throw new Error('條件 '+field+' 格式錯誤，必須為 0 以上的整數！');
+		else if((field=='startTime' || field=='endTime') && !(filter[field] instanceof Date))
+			throw new Error('條件 '+field+' 格式錯誤，必須為 Date 物件！');
+		else if(field=='limit' && !(Number.isSafeInteger(filter.limit) && filter.limit>0 && filter.limit<=500))
+			throw new Error('條件 limit 格式錯誤，必須為 0 以上且在 500 以內的整數！');
+	}
+	var cmd={
+		'action': 'chatlog_query',
+		'type': filter.type,
+		'limit': filter.limit || 100
+	};
+	if(filter.channelId) cmd.channelId=filter.channelId;
+	if(filter.startTime) cmd.startTime=filter.startTime;
+	if(filter.endTime) cmd.endTime=filter.endTime;
+	if(filter.startMessageId) cmd.startMessageId=filter.startMessageId;
+	
+	if(this._inQuery_chatLog===false){
+		this.once('chatLogQuery',callback);
+		this._send(cmd);
+		this._inQuery_chatLog=[];
+		this.once('chatLogQuery',function(){
+			if(this._inQuery_chatLog && !this._inQuery_chatLog.length)
+				this._inQuery_chatLog=false;
+		});
+	}else{
+		if(this._inQuery_chatLog.length===0){
+			var nextQuery=function(){
+				var next=this._inQuery_chatLog.shift();
+				this.once('chatLogQuery',next[1]);
+				this._send(next[0]);
+				if(!this._inQuery_chatLog.length){
+					this.removeListener('chatLogQuery',nextQuery);
+					this.once('chatLogQuery',function(){
+						if(this._inQuery_chatLog && !this._inQuery_chatLog.length)
+							this._inQuery_chatLog=false;
+					});
+				}
+			};
+			this.on('chatLogQuery',nextQuery);
+		}
+		this._inQuery_chatLog.push([cmd,callback]);
 	}
 }
 AChatClient.prototype.chatSend=function(type,toUserId,msg){
