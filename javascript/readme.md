@@ -142,6 +142,17 @@ MIT Licence
 
 * `error` (Error or Undefined) 載入時發生的錯誤
 
+### listSession
+當前存在的 Session 列表
+
+* `sessions` (Array)
+	* (Object)
+		* `session` (String) Session
+		* `createTime` (Date) 建立時間
+		* `lastClient` (String) 最後使用的用戶端
+		* `lastLogin` (Date) 最後登入時間
+		* `online` (Boolean) 當前是否在線
+
 ### needOnline
 需要網路時觸發
 
@@ -155,6 +166,13 @@ MIT Licence
 ### online
 已上線
 
+### removeSession
+刪除 Session
+
+* `session` (String) 刪除目標
+* `status` (String) 刪除結果
+	* `removed` 刪除成功
+	* `now session` 為當前 session，不可刪除(請使用登出進行刪除)
 
 ## 靜態變數
 ### AChatClient.statusCode.*
@@ -289,6 +307,9 @@ MIT Licence
 * `userId` (Number) 目標帳號編號
 * `callback` (Function,選擇性) 返回結果，包含 userId 過濾，參數見事件 getUserProfile
 
+### listSession(callback)
+* `callback` (Function,選擇性) 返回結果，參數見事件 listSession
+
 ### logout()
 登出，並刪除 Session 及登入資訊
 
@@ -332,6 +353,12 @@ MIT Licence
 
 * `evName` (String) 事件名稱，未填則刪除所有事件的觸發函式
 * `func` (Function)	觸發函式，未填則刪除該事件下所有觸發函式
+
+### removeSession(session,callback)
+刪除 Session
+
+* `session` (String) 刪除目標 Session
+* `callback` (Function,選擇性) 返回結果，參數見事件 removeSession
 
 ## 內部事件
 這些事件僅提供函式庫內部自行調用，一般使用者可以跳過。

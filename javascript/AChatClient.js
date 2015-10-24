@@ -236,6 +236,16 @@ AChatClient.action={
 		if('status' in data)
 			this._emit('editUserProfile',data.status);
 	},
+	'user_listSession': function(data){
+		for(var session of data.sessions){
+			session.createTime=new Date(session.createTime);
+			session.lastLogin=new Date(session.lastLogin);
+		}
+		this._emit('listSession',data.sessions);
+	},
+	'user_removeSession': function(data){
+		this._emit('removeSession',data.session,data.status);
+	},
 	'user_sendClient': function(data){
 		
 	}
@@ -674,6 +684,21 @@ AChatClient.prototype.getProfile=function(userIds,callback){//改為使用者自
 		'userIds': userIds
 	});
 	return true;
+}
+AChatClient.prototype.listSession=function(callback){
+	if(!this._inited || !this._checkLogin(callback)) return;
+	callback && this.once('listSession',callback);
+	this._send({'action':'user_listSession'});
+}
+AChatClient.prototype.removeSession=function(session,callback){
+	if(!this._inited || !this._checkLogin(callback)) return;
+	if(typeof(session)!=='string')
+		throw new Error('缺少 session 欄位或型態錯誤');
+	callback && this.once('removeSession',callback);
+	this._send({
+		'action':'user_removeSession',
+		'session': session
+	});
 }
 AChatClient.prototype.logout=function(){
 	if(!this._inited) return;
