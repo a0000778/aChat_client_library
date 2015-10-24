@@ -681,7 +681,7 @@ AChatClient.prototype.getProfile=function(userIds,callback){//改為使用者自
 	}
 	if(query.length) this._send({
 		'action': 'user_getProfile',
-		'userIds': userIds
+		'userIds': query
 	});
 	return true;
 }
