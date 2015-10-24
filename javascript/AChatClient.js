@@ -385,6 +385,7 @@ AChatClient.prototype._connect=function(){
 	link.addEventListener('open',function(){
 		_._debug('[WebSocket] 連線已建立');
 		_._reConnectCount=0;
+		_._send({'action':'client','client':'aChatClientLibrary for Javascript '+AChatClient.version})
 		_._emit('_connect');
 	});
 }
