@@ -259,6 +259,10 @@ AChatClient.statusCode={
 	4104: '被踢出伺服器',
 	4105: 'Session 已被刪除'
 };
+Object.defineProperty(AChatClient,'version',{
+	'enumerable': true,
+	'value': '1.0.0-beta'
+});
 AChatClient.prototype._ajax=function(method,path,data,callback){
 	if(!this._checkOnline(true)){
 		callback(new Error('no network'));

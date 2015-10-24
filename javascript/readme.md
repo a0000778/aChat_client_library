@@ -160,6 +160,9 @@ MIT Licence
 ### AChatClient.statusCode.*
 狀態碼意義
 
+### AChatClient.version
+函式庫版本
+
 ## 靜態 API
 ### new AChatClient(config)
 新增 AChatClient 物件，瀏覽器不支援則返回false。
