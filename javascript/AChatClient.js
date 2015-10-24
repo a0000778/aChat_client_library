@@ -5,7 +5,7 @@ for JavaScript v1.0.0-beta
 for aChat v2.0.0-beta
 by a0000778
 */
-(function(JSON,localStorage,Object,WebSocket,window){
+(function(CryptoJS,Date,Error,JSON,Map,Object,Set,WebSocket,XMLHttpRequest,localStorage){
 function AChatClient(config,callback){
 	if(!this.constructor.checkSupport())
 		return false;
@@ -848,4 +848,4 @@ AChatClient.prototype.removeListener=function(evName,func){
 }
 
 window.AChatClient=AChatClient;
-})(JSON,window.localStorage,Object,window.WebSocket,window);
+})(CryptoJS,Date,Error,JSON,window.Map,Object,window.Set,window.WebSocket,XMLHttpRequest,window.localStorage);
