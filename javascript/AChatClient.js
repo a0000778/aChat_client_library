@@ -316,7 +316,7 @@ AChatClient.action={
 		this._emit('removeSession',data.session,data.status);
 	},
 	'user_sendClient': function(data){
-		
+		this._emit('sendClient',data.from,data.data);
 	}
 }
 AChatClient.checkSupport=function(){
@@ -886,6 +886,16 @@ AChatClient.prototype.removeListener=function(evName,func){
 		else this._event[evName].clear();
 	}
 	return this;
+}
+AChatClient.prototype.sendClient=function(data,toSession){
+	if(!this._inited || !this._checkLogin()) return;
+	if(data===undefined) return;
+	var cmd={
+		'action': 'user_sendClient',
+		'data': data
+	};
+	if(typeof(toSession)==='string') cmd.session=toSession;
+	this._send(cmd);
 }
 
 window.AChatClient=AChatClient;

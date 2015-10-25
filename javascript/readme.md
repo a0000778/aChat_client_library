@@ -190,6 +190,12 @@ MIT Licence
 	* `removed` 刪除成功
 	* `now session` 為當前 session，不可刪除(請使用登出進行刪除)
 
+### sendClient
+收到來自同使用者任意用戶端的訊息
+
+* `from` (String) 來自 Session
+* `data` (Mixed) 訊息內容，型態由發送端決定
+
 ## 靜態變數
 ### AChatClient.statusCode.*
 狀態碼意義
@@ -389,6 +395,12 @@ MIT Licence
 
 * `session` (String) 刪除目標 Session
 * `callback` (Function,選擇性) 返回結果，參數見事件 removeSession
+
+### sendClient(data,toSession)
+發送訊息給同使用者任意用戶端
+
+* `data` (Mixed) 訊息內容
+* `toSession` (String,選擇性) 發送目標，未定義則發送給同使用者所有用戶端
 
 ## 內部事件
 這些事件僅提供函式庫內部自行調用，一般使用者可以跳過。
