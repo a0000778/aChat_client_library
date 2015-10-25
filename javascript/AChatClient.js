@@ -21,16 +21,15 @@ var clientInfo=(function browser(){
 			case '6.3': result+='8.1'; break;
 			case '10.0': result+='10'; break;
 		}
-	}else if(osInfo=ua.match(/Mac OS X (\d+_\d+)/)){
+	}else if(osInfo=ua.match(/Mac OS X (\d+(?:_|\.)\d+)/)){
 		result+='OS X ';
 		result+=osInfo[1].replace('_','.');
 	}else if(osInfo=ua.indexOf('Linux')){
-		result.os='Linux';
+		result+='Linux';
 	}else if(osInfo=ua.indexOf('FreeBSD')){
-		result.os='FreeBSD';
+		result+='FreeBSD';
 	}else{
-		result.os='Unknown';
-		result.osVer='';
+		result+='Unknown';
 	}
 	
 	var browserInfo;
