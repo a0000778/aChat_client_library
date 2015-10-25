@@ -106,16 +106,16 @@ function AChatClient(config,callback){
 
 	var _=this;
 	var waitCount=this.constructor.pluginInit.length+1;
-	var onLoad=function(){
+	var onLoad=function(error){
+		if(error!==undefined){
+			console.error(error);
+			if(waitCount===-Infinity) return;
+			waitCount=-Infinity;//強制無法載入完畢
+			_._emit('inited',error);
+		}
 		if(--waitCount || _._inited) return;
 		_._inited=true;
 		_._emit('inited');
-	}
-	var onError=function(error){
-		console.error(error);
-		if(waitCount===-Infinity) return;
-		waitCount=-Infinity;//強制無法載入完畢
-		_._emit('inited',error);
 	}
 	callback && this.once('inited',callback);
 	if(this._authData=localStorage.getItem(this.keyPrefix+'authData')){
@@ -129,7 +129,11 @@ function AChatClient(config,callback){
 	}
 	//擴充功能初始化
 	this.constructor.pluginInit.forEach(function(func){
-		func.call(this,onError,onLoad);
+		try{
+			func.call(this,onLoad);
+		}catch(e){
+			onLoad(e);
+		}
 	},this);
 	setTimeout(onLoad,0);
 }
