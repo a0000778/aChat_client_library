@@ -390,10 +390,10 @@ MIT Licence
 * `evName` (String) 事件名稱，未填則刪除所有事件的觸發函式
 * `func` (Function)	觸發函式，未填則刪除該事件下所有觸發函式
 
-### removeSession(session,callback)
+### removeSession(targetSession,callback)
 刪除 Session
 
-* `session` (String) 刪除目標 Session
+* `targetSession` (String) 刪除目標 Session
 * `callback` (Function,選擇性) 返回結果，參數見事件 removeSession
 
 ### sendClient(data,toSession)

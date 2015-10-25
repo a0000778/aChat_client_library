@@ -811,14 +811,21 @@ AChatClient.prototype.listSession=function(callback){
 	callback && this.once('listSession',callback);
 	this._send({'action':'user_listSession'});
 }
-AChatClient.prototype.removeSession=function(session,callback){
+AChatClient.prototype.removeSession=function(targetSession,callback){
 	if(!this._inited || !this._checkLogin(callback)) return;
-	if(typeof(session)!=='string')
-		throw new Error('缺少 session 欄位或型態錯誤');
-	callback && this.once('removeSession',callback);
+	if(typeof(targetSession)!=='string')
+		throw new Error('缺少 targetSession 欄位或型態錯誤');
+	if(callback){
+		var isRemoveTarget=function(session,status){
+			if(targetSession!=session) return;
+			callback.call(this,session,status);
+			this.removeListener('removeSession',callback);
+		}
+		this.on('removeSession',isRemoveTarget);
+	}
 	this._send({
 		'action':'user_removeSession',
-		'session': session
+		'session': targetSession
 	});
 }
 AChatClient.prototype.logout=function(){
