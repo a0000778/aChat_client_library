@@ -205,8 +205,9 @@ AChatClient.action={
 			var userList=[];
 			var waitCount=data.userList.length;
 			this._inQuery_channelUserList.add(data.channelId);//來自伺服端主動發送更新的情況
-			if(vEmit){
+			if(vEmit || !data.userList.length){
 				this._emit('channelUserList',null,data.channelId,data.userList);
+				this._inQuery_channelUserList.delete(data.channelId);
 			}else if(data.channelId===this.channelId){
 				var cache_channelUserList=this._cache_channelUserList;
 				cache_channelUserList.clear();
@@ -228,8 +229,10 @@ AChatClient.action={
 					this._emit('channelUserList',null,data.channelId,userList);
 				});
 			}
-		}else
+		}else{
 			this._emit('channelUserList',data.status,data.channelId);
+			this._inQuery_channelUserList.delete(data.channelId);
+		}
 	},
 	'chat_global': function(data){
 		this._emit('chatGlobal',new Date(data.time),data.msg);
@@ -633,7 +636,7 @@ AChatClient.prototype.channelUserList=function(channelId,callback){
 	}
 	callback && this.once('channelUserList',callback);
 	if(this._inQuery_channelUserList.has(channelId)) return;
-	if(channelId===this.channelId && this._cacheChannelUserList.size){
+	if(channelId===this.channelId && this._cache_channelUserList.size){
 		var list=[];
 		for(var u of this._cache_channelUserList)
 			list.push(u);
@@ -641,10 +644,10 @@ AChatClient.prototype.channelUserList=function(channelId,callback){
 			'action': 'channel_userList',
 			'status': 'success',
 			'channelId': channelId,
-			'list': list
+			'userList': list
 		},true);
 	}else{
-		this._inQuery_channelUserList.add(channelId);
+		this._inQuery_channelUserList.add(channelId || this.channelId);
 		this._send({
 			'action': 'channel_userList',
 			'channelId': channelId
