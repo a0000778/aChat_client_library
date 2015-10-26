@@ -822,7 +822,7 @@ AChatClient.prototype.removeSession=function(targetSession,callback){
 		var isRemoveTarget=function(session,status){
 			if(targetSession!=session) return;
 			callback.call(this,session,status);
-			this.removeListener('removeSession',callback);
+			this.removeListener('removeSession',isRemoveTarget);
 		}
 		this.on('removeSession',isRemoveTarget);
 	}
