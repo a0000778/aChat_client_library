@@ -680,7 +680,7 @@ AChatClient.prototype.chatLogQuery=function(filter,callback){
 	if(filter.startMessageId) cmd.startMessageId=filter.startMessageId;
 	
 	if(this._inQuery_chatLog===false){
-		this.once('chatLogQuery',callback);
+		callback && this.once('chatLogQuery',callback);
 		this._send(cmd);
 		this._inQuery_chatLog=[];
 		this.once('chatLogQuery',function(){
@@ -691,7 +691,7 @@ AChatClient.prototype.chatLogQuery=function(filter,callback){
 		if(this._inQuery_chatLog.length===0){
 			var nextQuery=function(){
 				var next=this._inQuery_chatLog.shift();
-				this.once('chatLogQuery',next[1]);
+				next[1] && this.once('chatLogQuery',next[1]);
 				this._send(next[0]);
 				if(!this._inQuery_chatLog.length){
 					this.removeListener('chatLogQuery',nextQuery);
