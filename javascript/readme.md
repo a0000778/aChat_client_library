@@ -247,6 +247,9 @@ MIT Licence
 ### username
 當前登入者的名稱，未登入為 `null`
 
+### session
+當前登入所使用的 session
+
 ### canAutoAuth
 是否可以使用儲存的驗證資料進行驗證
 
