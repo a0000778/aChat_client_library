@@ -499,7 +499,11 @@ AChatClient.prototype._emit=function(evName){//evName,arg1,arg2...
 	if(this._event.hasOwnProperty(evName)){
 		for(var func of this._event[evName]){
 			this._debug('[Event] -> %o',func[0]);
-			func[1].apply(this,args);
+			try{
+				func[1].apply(this,args);
+			}catch(e){
+				this._debug('[Event]   -> 發生錯誤: %o',e);
+			}
 		}
 	}
 	return this;
@@ -523,8 +527,12 @@ AChatClient.prototype._passwordHmac=function(question,password){
 AChatClient.prototype._send=function(data){
 	if(this.connected){
 		this._debug('[WebSocket] 發送資料: %o',data);
-		this._link.send(JSON.stringify(data));
-		return true;
+		try{
+			this._link.send(JSON.stringify(data));
+			return true;
+		}catch(e){
+			this._debug('[WebSocket] 發送失敗: %o',e);
+		}
 	}
 	return false;
 }
