@@ -95,6 +95,7 @@ function AChatClient(config,callback){
 	this.channelId=null;
 	this.userId=null;
 	this.username=null;
+	this.session=null;
 	Object.defineProperty(this,'canAutoAuth',{
 		'enumerable': true,
 		'get': function(){ return !!_._authData; }
@@ -401,6 +402,7 @@ AChatClient.prototype._clearStatus=function(){
 	this.channelId=null;
 	this.userId=null;
 	this.username=null;
+	this.session=null;
 }
 AChatClient.prototype._connect=function(){
 	if(this._link) return;
@@ -551,7 +553,9 @@ AChatClient.prototype.authBySession=function(userId,session,callback){
 			'session': authData.session
 		});
 	};
-	var clearEvent=function(){
+	var clearEvent=function(result){
+		if(result=='success')
+			this.session=authData.session;
 		this
 			.removeListener('_connect',authBySession)
 			.removeListener('auth',clearEvent)
