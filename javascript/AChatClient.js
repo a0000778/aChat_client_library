@@ -430,10 +430,10 @@ AChatClient.prototype._connect=function(){
 			if(_._checkOnline()){
 				setTimeout(
 					function(){
-						if(this.userId)
+						if(_.userId)
 							_.authBySession();
 						else//清空狀態，停止自動重連的場合
-							this._reConnectCount=0;
+							_._reConnectCount=0;
 					},
 					Math.min(_._reConnectCount*10000,60000)
 				);
@@ -446,7 +446,7 @@ AChatClient.prototype._connect=function(){
 			}
 			_._reConnectCount++;
 		}else{
-			this._reConnectCount=0;
+			_._reConnectCount=0;
 			_._clearStatus();
 			_._emit('offline',ev.code===1000,false,AChatClient.statusCode[ev.code] || '未知');
 		}
