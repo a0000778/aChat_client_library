@@ -2,7 +2,7 @@
 /*
 aChat Client Library
 for JavaScript v1.0.0-beta
-for aChat v2.0.0-beta
+for aChat v2.0.0-rc1
 by a0000778
 */
 (function(CryptoJS,Date,Error,JSON,Map,Object,Set,WebSocket,XMLHttpRequest,localStorage){
@@ -347,7 +347,7 @@ AChatClient.statusCode={
 };
 Object.defineProperty(AChatClient,'version',{
 	'enumerable': true,
-	'value': '1.0.0-beta'
+	'value': '1.0.0-rc1'
 });
 AChatClient.prototype._ajax=function(method,path,data,callback){
 	if(!this._checkOnline(true)){
@@ -537,7 +537,7 @@ AChatClient.prototype._send=function(data){
 	return false;
 }
 AChatClient.prototype.authBySession=function(userId,session,callback){
-	if(!this._inited || this.userId) return;
+	if(!this._inited || (this.userId && this._link)) return;
 	if(typeof(userId)==='function'){
 		callback=userId;
 		userId=undefined;
