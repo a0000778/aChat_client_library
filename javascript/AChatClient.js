@@ -423,7 +423,7 @@ AChatClient.prototype._connect=function(){
 			case 4103: _._emit('auth','repeat'); return;
 		}
 		
-		if(ev.code===1006 && !this.userId){//非登入後斷線所導致
+		if(ev.code===1006 && !_.userId){//非登入後斷線所導致
 			_._emit('connectionFail');
 		}else if(ev.code===1006 && _.autoReconnect && _._authData){//開啟自動重連的情況
 			_._emit('offline',false,true,AChatClient.statusCode[ev.code] || '未知');
