@@ -31,7 +31,8 @@ AChatClient.action.admin_user_unban=function(data){
 	
 }
 AChatClient.action.admin_chat_global=function(data){
-	
+	this._admin_execing.delete('admin_chat_global');
+	this._emit('admin_chatGlobal',data.status);
 }
 AChatClient.prototype.admin_channelCreate=function(channelName,callback){
 	if(this.actionGroup!='Admin') return;
@@ -106,7 +107,41 @@ AChatClient.prototype.admin_channelEdit=function(channelId,newChannelName,callba
 }
 AChatClient.prototype.admin_chatGlobal=function(type,msg,target,callback){
 	if(this.actionGroup!='Admin') return;
-	
+	if(type=='global'){
+		if(typeof(msg)!='string' || !msg){
+			this._error(new Error('msg 必須為字串且不為空！'));
+			return;
+		}
+		if(typeof(target)=='function'){
+			callback=target;
+			target=undefined;
+		}
+	}else if(type=='channel' || type=='user'){
+		if(!this._checkId(target)){
+			this._error(new Error('target 必須為大於0的整數！'));
+			return;
+		}
+	}else{
+		this._error(new Error('type 必須為 global, channel, user 其中之一！'));
+		return;
+	}
+	if(this._admin_execing.has('admin_chat_global')){
+		var nextExec=function(){
+			if(this._admin_execing.has('admin_chat_global')) return;
+			this.removeListener('admin_chatGlobal',nextExec);
+			this.admin_chatGlobal(type,msg,target,callback);
+		}
+		this.on('admin_chatGlobal',nextExec);
+	}else{
+		callback && this.once('admin_chatGlobal',callback);
+		var cmd={
+			'action': 'admin_chat_global',
+			'msg': msg
+		};
+		if(type=='channel') cmd.channelId=target;
+		else if(type=='user') cmd.userId=target;
+		this._send(cmd);
+	}
 }
 AChatClient.prototype.admin_userKick=function(userId,callback){
 	if(this.actionGroup!='Admin') return;
