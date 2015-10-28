@@ -742,8 +742,10 @@ AChatClient.prototype.chatSend=function(type,toUserId,msg){
 }
 AChatClient.prototype.checkEmail=function(code,callback){
 	if(!this._inited) return;
-	if(this.httpServer===null)
+	if(this.httpServer===null){
 		this._error(new Error('httpServer not found'));
+		return;
+	}
 	this._ajax('post','/v1/mail',{
 		'code': code
 	},callback);
@@ -771,8 +773,10 @@ AChatClient.prototype.editProfile=function(password,profileData,callback){
 }
 AChatClient.prototype.forgotPassword=function(email,callback){
 	if(!this._inited) return;
-	if(this.httpServer===null)
+	if(this.httpServer===null){
 		this._error(new Error('httpServer not found'));
+		return;
+	}
 	this._ajax('post','/v1/forgotPassword',{
 		'email': email
 	},callback);
@@ -887,8 +891,10 @@ AChatClient.prototype.once=function(evName,func){
 }
 AChatClient.prototype.register=function(username,email,password,callback){
 	if(!this._inited) return;
-	if(this.httpServer===null)
+	if(this.httpServer===null){
 		this._error(new Error('httpServer not found'));
+		return;
+	}
 	this._ajax('post','/v1/register',{
 		'username': username,
 		'email': email,
@@ -897,8 +903,10 @@ AChatClient.prototype.register=function(username,email,password,callback){
 }
 AChatClient.prototype.resetPassword=function(code,callback){
 	if(!this._inited) return;
-	if(this.httpServer===null)
+	if(this.httpServer===null){
 		this._error(new Error('httpServer not found'));
+		return;
+	}
 	this._ajax('post','/v1/resetPassword',{
 		'code': code
 	},callback);

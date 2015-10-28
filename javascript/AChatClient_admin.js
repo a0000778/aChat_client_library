@@ -35,8 +35,10 @@ AChatClient.action.admin_chat_global=function(data){
 }
 AChatClient.prototype.admin_channelCreate=function(channelName,callback){
 	if(this.actionGroup!='Admin') return;
-	if(typeof(channelName)!='string' || !channelName)
+	if(typeof(channelName)!='string' || !channelName){
 		this._error(new Error('channelName 必須為字串且不為空！'));
+		return;
+	}
 	if(this._admin_execing.has('admin_channel_create')){
 		var nextExec=function(){
 			if(this._admin_execing.has('admin_channel_create')) return;
@@ -55,8 +57,10 @@ AChatClient.prototype.admin_channelCreate=function(channelName,callback){
 }
 AChatClient.prototype.admin_channelDelete=function(channelId,callback){
 	if(this.actionGroup!='Admin') return;
-	if(!this._checkId(channelId))
+	if(!this._checkId(channelId)){
 		this._error(new Error('channelId 必須為大於0的整數！'));
+		return;
+	}
 	if(this._admin_execing.has('admin_channel_delete')){
 		var nextExec=function(){
 			if(this._admin_execing.has('admin_channel_delete')) return;
@@ -75,10 +79,14 @@ AChatClient.prototype.admin_channelDelete=function(channelId,callback){
 }
 AChatClient.prototype.admin_channelEdit=function(channelId,newChannelName,callback){
 	if(this.actionGroup!='Admin') return;
-	if(!this._checkId(channelId))
+	if(!this._checkId(channelId)){
 		this._error(new Error('channelId 必須為大於0的整數！'));
-	if(typeof(newChannelName)!='string' || !newChannelName)
+		return;
+	}
+	if(typeof(newChannelName)!='string' || !newChannelName){
 		this._error(new Error('newChannelName 必須為字串且不為空！'));
+		return;
+	}
 	if(this._admin_execing.has('admin_channel_edit')){
 		var nextExec=function(){
 			if(this._admin_execing.has('admin_channel_edit')) return;
