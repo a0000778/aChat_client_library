@@ -112,6 +112,14 @@ MIT Licence
 * `toUsername` (String) 發送目標名稱
 * `message` (String) 發送內容
 
+### chatSendError
+訊息發送錯誤，無錯誤時不觸發
+
+* `type` (String) 發送類型，目前必為 `private`
+	* `private` 密頻發送錯誤
+* `error` (String) 錯誤資訊
+	* `offline or not exists` 目標不在線或不存在
+
 ### close
 連線中斷
 

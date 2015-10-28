@@ -253,6 +253,10 @@ AChatClient.action={
 		this._emit('chatNotice',new Date(data.time),data.msg);
 	},
 	'chat_private': function(data){
+		if(data.error=='offline or not exists'){
+			this._emit('chatSendError','private','offline or not exists');
+			return;
+		}
 		var fromUsername,toUsername;
 		this.getProfile([data.fromUserId,data.toUserId],function(status,userId,profile){
 			if(userId===data.fromUserId) fromUsername=(status==='success'? profile.username:null);
