@@ -122,8 +122,7 @@ AChatClient.prototype._chatLog_upgradeDB=function(){
 		objStore=this._chatLog_db.createObjectStore('channel',{'keyPath':'channelId'});
 		objStore=this._chatLog_db.createObjectStore('user',{'keyPath':'userId'});
 		objStore.createIndex('username','username',{'unique': true});
-		objStore=this._chatLog_db.createObjectStore('chatlog');
-		objStore.createIndex('messageId','messageId',{'unique': true});
+		objStore=this._chatLog_db.createObjectStore('chatLog',{'keyPath':'messageId'});
 		objStore.createIndex('aboutUserId','aboutUserId');
 		objStore.createIndex('aboutChannelId','aboutChannelId');
 		objStore.createIndex('type','type');
