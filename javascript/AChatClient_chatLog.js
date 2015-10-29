@@ -11,7 +11,7 @@ var openedDB=new Map();
 AChatClient.pluginInit.push(function(onLoad){
 	var _=this;
 	this._chatLog_db=null;
-	this._chatLog_status='wait login';
+	this.chatLog_status='wait login';
 	//資料庫事件，多重開啟的情況下關閉其一使用
 	this._chatLog_dbEv_error=function(error){
 		_._error(error);
@@ -42,7 +42,7 @@ AChatClient.prototype._chatLog_closeDB=function(logout,autoReconnect){
 		this._chatLog_db.removeEventListener('close',this._chatLog_dbEv_close);
 		this._chatLog_db=null;
 	}
-	this._chatLog_status='wait login';
+	this.chatLog_status='wait login';
 }
 AChatClient.prototype._chatLog_initDB=function(db){
 	if(this._chatLog_db) return;
@@ -50,12 +50,12 @@ AChatClient.prototype._chatLog_initDB=function(db){
 	db.addEventListener('versionchange',this._chatLog_dbEv_versionchange);
 	db.addEventListener('close',this._chatLog_dbEv_close);
 	this._chatLog_db=db;
-	this._chatLog_status='loaded';
 	this._emit('chatLog_loaded');
+	this.chatLog_status='loaded';
 }
 AChatClient.prototype._chatLog_openDB=function(){
 	if(this._chatLog_db || !this.userId) return;
-	this._chatLog_status='loading';
+	this.chatLog_status='loading';
 	dbName=this.keyPrefix+'chatLog_'+this.userId;
 	var _=this;
 	if(openingDB.has(dbName)){
@@ -64,17 +64,17 @@ AChatClient.prototype._chatLog_openDB=function(){
 		});
 	}else if(openedDB.has(dbName)){
 		var dbInfo=openedDB.get(dbName);
-		if(this._chatLog_status!='needUpgrade') dbInfo.count++;
+		if(this.chatLog_status!='needUpgrade') dbInfo.count++;
 		if(dbInfo.status=='opened')
 			this._chatLog_initDB(dbInfo.db);
 		else if(dbInfo.status=='needUpgrade'){
-			this._chatLog_status='needUpgrade';
+			this.chatLog_status='needUpgrade';
 			dbInfo.waitOpen.push(function(){
 				_._chatLog_openDB();
 			});
 			this._emit('chatLog_needUpgrade');
 		}else if(dbInfo.status=='error'){
-			this._chatLog_status='error';
+			this.chatLog_status='error';
 			this._error(dbInfo.error);
 		}
 	}else{
@@ -87,13 +87,13 @@ AChatClient.prototype._chatLog_openDB=function(){
 		var req=indexedDB.open(dbName,version);
 		req.addEventListener('error',function(error){
 			openedDB.set(dbName,{'db': null,'count': 1,'status': 'error','error': error});
-			_._chatLog_status='error';
+			_.chatLog_status='error';
 			_._error(error);
 			clearOpeningDB();
 		});
 		req.addEventListener('blocked',function(){
 			openedDB.set(dbName,{'db': null,'count': 1,'status': 'needUpgrade','waitOpen':[]});
-			_._chatLog_status='needUpgrade';
+			_.chatLog_status='needUpgrade';
 			_._emit('chatLog_needUpgrade');
 			clearOpeningDB();
 		});
