@@ -21,18 +21,21 @@ AChatClient.action.admin_channel_edit=function(data){
 	this._admin_execing.delete('admin_channel_edit');
 	this._emit('admin_channelEdit',data.status);
 }
-AChatClient.action.admin_user_kick=function(data){
-	
-}
-AChatClient.action.admin_user_ban=function(data){
-	
-}
-AChatClient.action.admin_user_unban=function(data){
-	
-}
 AChatClient.action.admin_chat_global=function(data){
 	this._admin_execing.delete('admin_chat_global');
 	this._emit('admin_chatGlobal',data.status);
+}
+AChatClient.action.admin_user_ban=function(data){
+	this._admin_execing.delete('admin_user_ban');
+	this._emit('admin_userBan',data.status);
+}
+AChatClient.action.admin_user_kick=function(data){
+	this._admin_execing.delete('admin_user_kick');
+	this._emit('admin_userKick',data.status);
+}
+AChatClient.action.admin_user_unban=function(data){
+	this._admin_execing.delete('admin_user_unban');
+	this._emit('admin_userUnban',data.status);
 }
 AChatClient.prototype.admin_channelCreate=function(channelName,callback){
 	if(this.actionGroup!='Admin') return;
@@ -143,16 +146,70 @@ AChatClient.prototype.admin_chatGlobal=function(type,msg,target,callback){
 		this._send(cmd);
 	}
 }
-AChatClient.prototype.admin_userKick=function(userId,callback){
-	if(this.actionGroup!='Admin') return;
-	
-}
 AChatClient.prototype.admin_userBan=function(userId,callback){
 	if(this.actionGroup!='Admin') return;
-	
+	if(!this._checkId(userId)){
+		this._error(new Error('userId 必須為大於0的整數！'));
+		return;
+	}
+	if(this._admin_execing.has('admin_user_ban')){
+		var nextExec=function(){
+			if(this._admin_execing.has('admin_user_ban')) return;
+			this.removeListener('admin_userBan',nextExec);
+			this.admin_userBan(userId,callback);
+		}
+		this.on('admin_userBan',nextExec);
+	}else{
+		callback && this.once('admin_userBan',callback);
+		this._admin_execing.add('admin_user_ban');
+		this._send({
+			'action': 'admin_user_ban',
+			'userId': userId
+		});
+	}
+}
+AChatClient.prototype.admin_userKick=function(userId,callback){
+	if(this.actionGroup!='Admin') return;
+	if(!this._checkId(userId)){
+		this._error(new Error('userId 必須為大於0的整數！'));
+		return;
+	}
+	if(this._admin_execing.has('admin_user_kick')){
+		var nextExec=function(){
+			if(this._admin_execing.has('admin_user_kick')) return;
+			this.removeListener('admin_userKick',nextExec);
+			this.admin_userKick(userId,callback);
+		}
+		this.on('admin_userKick',nextExec);
+	}else{
+		callback && this.once('admin_userKick',callback);
+		this._admin_execing.add('admin_user_kick');
+		this._send({
+			'action': 'admin_user_kick',
+			'userId': userId
+		});
+	}
 }
 AChatClient.prototype.admin_userUnban=function(userId,callback){
 	if(this.actionGroup!='Admin') return;
-	
+	if(!this._checkId(userId)){
+		this._error(new Error('userId 必須為大於0的整數！'));
+		return;
+	}
+	if(this._admin_execing.has('admin_user_unban')){
+		var nextExec=function(){
+			if(this._admin_execing.has('admin_user_unban')) return;
+			this.removeListener('admin_userUnban',nextExec);
+			this.admin_userUnban(userId,callback);
+		}
+		this.on('admin_userUnban',nextExec);
+	}else{
+		callback && this.once('admin_userUnban',callback);
+		this._admin_execing.add('admin_user_unban');
+		this._send({
+			'action': 'admin_user_unban',
+			'userId': userId
+		});
+	}
 }
 })(AChatClient);
