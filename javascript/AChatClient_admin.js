@@ -1,3 +1,4 @@
+'use strict';
 /*
 aChat Client Library
 for JavaScript v1.0.0-beta
