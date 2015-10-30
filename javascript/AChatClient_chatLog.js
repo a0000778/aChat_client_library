@@ -57,8 +57,8 @@ AChatClient.prototype._chatLog_initDB=function(db){
 AChatClient.prototype._chatLog_openDB=function(){
 	if(this._chatLog_db || !this.userId) return;
 	this.chatLog_status='loading';
-	dbName=this.keyPrefix+'chatLog_'+this.userId;
 	var _=this;
+	var dbName=this.keyPrefix+'chatLog_'+this.userId;
 	if(openingDB.has(dbName)){
 		openingDB.get(dbName).push(function(){
 			_._chatLog_openDB();
