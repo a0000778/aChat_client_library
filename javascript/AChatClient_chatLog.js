@@ -45,6 +45,65 @@ AChatClient.prototype._chatLog_closeDB=function(logout,autoReconnect){
 	}
 	this.chatLog_status='wait login';
 }
+AChatClient.prototype._chatLog_downloadLog_format=function(messages){
+	var _=this;
+	var checkedChannel=new Set();
+	var checkedUser=new Set();
+	var channelList=new Map();
+	var mEntries=messages.entries();
+	var transaction,s_chatLog,s_channel,s_user;
+	
+	this.channelList(function(channels){
+		channels.forEach(function(channel){
+			channelList.set(channel.channelId,channel.name);
+		});
+		transaction=this._chatLog_db.transaction(['channel','chatLog','user'],'readwrite');
+		s_chatLog=transaction.objectStore('chatLog');
+		s_channel=transaction.objectStore('channel');
+		s_user=transaction.objectStore('user');
+		mSaveMessage();
+	});
+
+	function abort(error){
+		_._error(error);
+		transaction.abort();
+	}
+	function mSaveChannel(channelId){
+		if(checkedChannel.has(channelId)) return;
+		checkedChannel.add(channelId);
+		var req=s_channel.get(channelId);
+		req.addEventListener('success',function(){
+			if(!req.result && channelList.has(channelId))
+				s_channel.add({'channelId': channelId,'name': channelList.get(channelId)});
+		});
+	}
+	function mSaveMessage(){
+		var message=mEntries.next();
+		if(message.done) return;
+		message=message.value[1];
+		if(message.channelId!==null && !checkedChannel.has(message.channelId))
+			mSaveChannel(message.channelId);
+		if(message.fromUserId!==null && !checkedUser.has(message.fromUserId))
+			mSaveUser(message.fromUserId,message.fromUsername);
+		if(message.toUserId!==null && !checkedUser.has(message.toUserId))
+			mSaveUser(message.toUserId,message.toUsername);
+		delete message.fromUsername;
+		delete message.toUsername;
+		message.aboutUserId=message.fromUserId===_.userId? message.toUserId:message.fromUserId;
+		var add=s_chatLog.add(message);
+		add.addEventListener('success',mSaveMessage);
+		add.addEventListener('error',abort);
+	}
+	function mSaveUser(userId,username){
+		if(checkedUser.has(userId)) return;
+		checkedUser.add(userId);
+		var req=s_user.get(userId);
+		req.addEventListener('success',function(){
+			if(!req.result)
+				s_user.add({'userId': userId,'username':username});
+		});
+	}
+}
 AChatClient.prototype._chatLog_initDB=function(db){
 	if(this._chatLog_db) return;
 	db.addEventListener('error',this._chatLog_dbEv_error);
