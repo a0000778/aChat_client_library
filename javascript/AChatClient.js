@@ -691,8 +691,8 @@ AChatClient.prototype.chatLogQuery=function(filter,callback){
 		'limit': filter.limit || 100
 	};
 	if(filter.channelId) cmd.channelId=filter.channelId;
-	if(filter.startTime) cmd.startTime=filter.startTime;
-	if(filter.endTime) cmd.endTime=filter.endTime;
+	if(filter.startTime) cmd.startTime=filter.startTime.getTime();
+	if(filter.endTime) cmd.endTime=filter.endTime.getTime();
 	if(filter.startMessageId) cmd.startMessageId=filter.startMessageId;
 	
 	if(this._inQuery_chatLog===false){
