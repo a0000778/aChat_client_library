@@ -71,7 +71,7 @@ AChatClient.prototype._chatLog_downloadLog_format=function(messages){
 	function mSaveChannel(channelId){
 		if(checkedChannel.has(channelId)) return;
 		checkedChannel.add(channelId);
-		var req=s_channel.get(channelId);
+		var req=s_channel.get(IDBKeyRange.only(channelId));
 		req.addEventListener('success',function(){
 			if(!req.result && channelList.has(channelId))
 				s_channel.add({'channelId': channelId,'name': channelList.get(channelId)});
@@ -98,25 +98,94 @@ AChatClient.prototype._chatLog_downloadLog_format=function(messages){
 	function mSaveUser(userId,username){
 		if(checkedUser.has(userId)) return;
 		checkedUser.add(userId);
-		var req=s_user.get(userId);
+		var req=s_user.get(IDBKeyRange.only(userId));
 		req.addEventListener('success',function(){
 			if(!req.result)
 				s_user.add({'userId': userId,'username':username});
 		});
 	}
 }
+AChatClient.prototype._chatLog_downloadLog_private=function(startMessageId){
+	this._debug('[chatLog] 從 %d 開始下載密頻記錄 ...',startMessageId);
+	this.chatLogQuery(
+		{'type': 'private','startMessageId': startMessageId,'limit': 500},
+		function(result){
+			if(!result.length){
+				this._debug('[chatLog] 密頻記錄下載完畢！');
+				return;
+			}
+			if(result.length===500){
+				var _=this;
+				setTimeout(function(){
+					_._chatLog_downloadLog_private(result[499].messageId+1);
+				},1000);
+			}else this._debug('[chatLog] 密頻記錄下載完畢！');
+			this._chatLog_downloadLog_format(result);
+		}
+	);
+}
+AChatClient.prototype._chatLog_downloadLog_public=function(startMessageId){
+	this._debug('[chatLog] 從 %d 開始下載公開記錄 ...',startMessageId);
+	this.chatLogQuery(
+		{'type': 'public','startMessageId': startMessageId,'limit': 500},
+		function(result){
+			if(!result.length){
+				this._debug('[chatLog] 公開記錄下載完畢！');
+				return;
+			}
+			if(result.length===500){
+				var _=this;
+				setTimeout(function(){
+					_._chatLog_downloadLog_public(result[499].messageId+1);
+				},1000);
+			}else this._debug('[chatLog] 公開記錄下載完畢！');
+			this._chatLog_downloadLog_format(result);
+		}
+	);
+}
+AChatClient.prototype._chatLog_emitAddLog=function(){
+	if(arguments.length===6) this._chatLog_downloadPrivate=true;
+	else if(arguments.length===4) this._chatLog_downloadPublic=true;
+	else{
+		this._chatLog_downloadPrivate=true;
+		this._chatLog_downloadPublic=true;
+	}
+	if(this._chatLog_downloadDelay) return;
+	this._debug('[chatLog] 下載新紀錄已列入排程 ...');
+	var _=this;
+	var cursor=this._chatLog_db
+		.transaction('chatLog','readonly')
+		.objectStore('chatLog')
+		.openCursor(null,'prev')
+	;
+	var lastMessageId;
+	cursor.addEventListener('success',function(){//public及private的startMessageId可能不同
+		lastMessageId=cursor.result? cursor.result.key+1:1;
+		_._chatLog_downloadDelay=setTimeout(function(){
+			_._chatLog_downloadDelay=null;
+			_._chatLog_downloadLog.call(_,lastMessageId);
+		},600000);
+	});
+};
 AChatClient.prototype._chatLog_initDB=function(db){
 	if(this._chatLog_db) return;
 	db.addEventListener('error',this._chatLog_dbEv_error);
 	db.addEventListener('versionchange',this._chatLog_dbEv_versionchange);
 	db.addEventListener('close',this._chatLog_dbEv_close);
 	this._chatLog_db=db;
-	this._emit('chatLog_loaded');
 	this.chatLog_status='loaded';
+	this._debug('[chatLog] 聊天記錄資料庫開啟成功！');
+	this
+		.on('chatGlobal',this._chatLog_emitAddLog)
+		.on('chatNormal',this._chatLog_emitAddLog)
+		.on('chatPrivate',this._chatLog_emitAddLog)
+		._emit('chatLog_loaded')
+	;
 }
 AChatClient.prototype._chatLog_openDB=function(){
 	if(this._chatLog_db || !this.userId) return;
 	this.chatLog_status='loading';
+	this._debug('[chatLog] 開啟聊天記錄資料庫...');
 	var _=this;
 	var dbName=this.keyPrefix+'chatLog_'+this.userId;
 	if(openingDB.has(dbName)){
