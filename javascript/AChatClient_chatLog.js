@@ -89,6 +89,7 @@ AChatClient.prototype._chatLog_downloadLog_format=function(messages){
 			mSaveUser(message.toUserId,message.toUsername);
 		delete message.fromUsername;
 		delete message.toUsername;
+		message.time=message.time.getTime();
 		message.aboutUserId=message.fromUserId===_.userId? message.toUserId:message.fromUserId;
 		var add=s_chatLog.add(message);
 		add.addEventListener('success',mSaveMessage);
