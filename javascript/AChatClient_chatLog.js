@@ -15,6 +15,7 @@ AChatClient.pluginInit.push(function(onLoad){
 	this.chatLog_status='wait login';
 	//資料庫事件，多重開啟的情況下關閉其一使用
 	this._chatLog_dbEv_error=function(error){
+		_._debug('[chatLog] 資料庫錯誤：%o',error);
 		_._error(error);
 	};
 	this._chatLog_dbEv_versionchange=function(){
@@ -202,9 +203,11 @@ AChatClient.prototype._chatLog_openDB=function(){
 			dbInfo.waitOpen.push(function(){
 				_._chatLog_openDB();
 			});
+			this._debug('[chatLog] 聊天記錄資料庫需要升級！等待資料庫關閉...');
 			this._emit('chatLog_needUpgrade');
 		}else if(dbInfo.status=='error'){
 			this.chatLog_status='error';
+			this._debug('[chatLog] 聊天記錄資料庫開啟失敗，錯誤：%o',dbInfo.error);
 			this._error(dbInfo.error);
 		}
 	}else{
@@ -218,12 +221,14 @@ AChatClient.prototype._chatLog_openDB=function(){
 		req.addEventListener('error',function(error){
 			openedDB.set(dbName,{'db': null,'count': 1,'status': 'error','error': error});
 			_.chatLog_status='error';
+			_._debug('[chatLog] 聊天記錄資料庫開啟失敗，錯誤：%o',error);
 			_._error(error);
 			clearOpeningDB();
 		});
 		req.addEventListener('blocked',function(){
 			openedDB.set(dbName,{'db': null,'count': 1,'status': 'needUpgrade','waitOpen':[]});
 			_.chatLog_status='needUpgrade';
+			_._debug('[chatLog] 聊天記錄資料庫需要升級！等待資料庫關閉...');
 			_._emit('chatLog_needUpgrade');
 			clearOpeningDB();
 		});
@@ -248,6 +253,7 @@ AChatClient.prototype._chatLog_openDB=function(){
 }
 AChatClient.prototype._chatLog_upgradeDB=function(){
 	if(this._chatLog_db.version===version){//建立用
+		this._debug('[chatLog] 建構聊天記錄資料庫...');
 		var objStore;
 		objStore=this._chatLog_db.createObjectStore('channel',{'keyPath':'channelId'});
 		objStore=this._chatLog_db.createObjectStore('user',{'keyPath':'userId'});
