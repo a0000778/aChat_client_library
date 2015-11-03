@@ -12,6 +12,9 @@ var openedDB=new Map();
 AChatClient.pluginInit.push(function(onLoad){
 	var _=this;
 	this._chatLog_db=null;
+	this._chatLog_downloadDelay=null;
+	this._chatLog_downloadPrivate=false;
+	this._chatLog_downloadPublic=false;
 	this.chatLog_status='wait login';
 	//資料庫事件，多重開啟的情況下關閉其一使用
 	this._chatLog_dbEv_error=function(error){
@@ -44,7 +47,19 @@ AChatClient.prototype._chatLog_closeDB=function(logout,autoReconnect){
 		this._chatLog_db.removeEventListener('close',this._chatLog_dbEv_close);
 		this._chatLog_db=null;
 	}
+	this
+		.removeListener('chatGlobal',this._chatLog_emitAddLog)
+		.removeListener('chatNormal',this._chatLog_emitAddLog)
+		.removeListener('chatPrivate',this._chatLog_emitAddLog)
+	;
 	this.chatLog_status='wait login';
+}
+AChatClient.prototype._chatLog_downloadLog=function(startMessageId){
+	//應使用Session最後登入時間同步
+	this._chatLog_downloadPrivate && this._chatLog_downloadLog_private(startMessageId);
+	this._chatLog_downloadPublic && this._chatLog_downloadLog_public(startMessageId);
+	this._chatLog_downloadPrivate=false;
+	this._chatLog_downloadPublic=false;
 }
 AChatClient.prototype._chatLog_downloadLog_format=function(messages){
 	var _=this;
