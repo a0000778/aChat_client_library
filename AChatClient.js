@@ -2,7 +2,7 @@
 /*
 aChat Client Library
 for JavaScript v1.0.0-rc1
-for aChat v2.0.0-rc1
+for aChat v2.0.x
 by a0000778
 */
 (function(CryptoJS,Date,Error,JSON,Map,Object,Set,WebSocket,XMLHttpRequest,localStorage){

@@ -1,7 +1,7 @@
 'use strict';
 /*
 aChat Client Library
-for JavaScript v1.0.0-beta
+for JavaScript v1.0.0-rc1
 Admin plugin v0.0.1
 by a0000778
 */
