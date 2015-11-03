@@ -23,3 +23,6 @@ MIT Licence
 
 ### AChatClient_admin.js
 擴充函式庫，提供管理用 API，說明見 `AChatClient_admin.md`
+
+### AChatClient_chatLog.js
+擴充函式庫，提供用戶端儲存聊天記錄及強化聊天記錄 API，說明見 `AChatClient_chatLog.md`
